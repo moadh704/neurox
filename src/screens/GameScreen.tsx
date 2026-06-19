@@ -52,6 +52,8 @@ export default function GameScreen() {
   const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
+  const [personalBest, setPersonalBest] = useState(0);
+  const [showNewBest, setShowNewBest] = useState(false);
 
   // Generate a new random tile and add to sequence
   const addNewTileToSequence = useCallback(() => {
@@ -93,8 +95,14 @@ export default function GameScreen() {
       playGameOver();
       hapticError();
       heavyImpact();
+
+      // Check for new best
+      if (sequence.length > personalBest) {
+        setPersonalBest(sequence.length);
+        setShowNewBest(true);
+      }
     }
-  }, [lives, playGameOver, hapticError, heavyImpact]);
+  }, [lives, playGameOver, hapticError, heavyImpact, sequence.length, personalBest]);
 
   // Start a new round / level
   const startNewRound = useCallback(async (startingLevel?: number) => {
@@ -172,6 +180,7 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(MAX_LIVES);
+    setShowNewBest(false);
 
     setTimeout(() => {
       startNewRound();
@@ -279,7 +288,21 @@ export default function GameScreen() {
         {gameState === 'gameOver' && (
           <View style={styles.gameOverOverlay}>
             <Text style={styles.gameOverTitle}>GAME OVER</Text>
-            <Text style={styles.gameOverScore}>Longest sequence: {sequence.length}</Text>
+
+            {showNewBest && (
+              <View style={styles.newBestBadge}>
+                <Text style={styles.newBestText}>★ NEW BEST! ★</Text>
+              </View>
+            )}
+
+            <Text style={styles.gameOverScore}>
+              Score: {sequence.length}
+            </Text>
+            {personalBest > 0 && (
+              <Text style={styles.personalBestText}>
+                Personal Best: {personalBest}
+              </Text>
+            )}
 
             <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
               <Text style={styles.retryText}>TRY AGAIN</Text>
@@ -291,7 +314,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 8 • Survival Mode</Text>
+        <Text style={styles.devNote}>Step 9 • Game Screens</Text>
       </View>
     </SafeAreaView>
   );
@@ -445,6 +468,24 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 16,
     fontWeight: '600',
+  },
+  newBestBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  newBestText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  personalBestText: {
+    color: '#AAAAAA',
+    fontSize: 14,
+    marginBottom: 24,
   },
   devNote: {
     position: 'absolute',
