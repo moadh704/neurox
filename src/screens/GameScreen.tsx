@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +17,7 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const GRID_SIZE = 3;
 const TILE_SIZE = 92;
+const MAX_LIVES = 3;
 
 export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
@@ -27,11 +27,12 @@ export default function GameScreen() {
   // Core game state
   const [sequence, setSequence] = useState<number[]>([]);
   const [userInput, setUserInput] = useState<number[]>([]);
-  const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'roundComplete' | 'wrong'>('idle');
+  const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'roundComplete' | 'wrong' | 'gameOver'>('idle');
   const [activeTile, setActiveTile] = useState<number | null>(null);
   const [wrongTile, setWrongTile] = useState<number | null>(null);
   const [round, setRound] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lives, setLives] = useState(MAX_LIVES);
 
   // Generate a new random tile and add to sequence
   const addNewTileToSequence = useCallback(() => {
@@ -47,45 +48,46 @@ export default function GameScreen() {
 
     for (let i = 0; i < seq.length; i++) {
       const tileId = seq[i];
-      
-      // Highlight tile
       setActiveTile(tileId);
-      
-      // Wait for flash duration
       await new Promise(resolve => setTimeout(resolve, 420));
-      
-      // Turn off
       setActiveTile(null);
-      
-      // Small gap between flashes
       if (i < seq.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 180));
       }
     }
 
-    // Finished watching
     setActiveTile(null);
     setIsProcessing(false);
     setGameState('playing');
   }, []);
 
-  // Start a new round (or first round)
+  // Lose a life
+  const loseLife = useCallback(() => {
+    const newLives = lives - 1;
+    setLives(newLives);
+
+    if (newLives <= 0) {
+      setGameState('gameOver');
+      setIsProcessing(true);
+    }
+  }, [lives]);
+
+  // Start a new round
   const startNewRound = useCallback(async () => {
     if (sequence.length === 0) {
-      // First round - start with 1 tile
       const firstTile = Math.floor(Math.random() * 9);
       const newSeq = [firstTile];
       setSequence(newSeq);
       setRound(1);
+      setLives(MAX_LIVES);
       await new Promise(resolve => setTimeout(resolve, 300));
       await playSequence(newSeq);
     } else {
-      // Add one new tile
       addNewTileToSequence();
       const newRound = round + 1;
       setRound(newRound);
       await new Promise(resolve => setTimeout(resolve, 400));
-      await playSequence([...sequence, sequence[sequence.length - 1]]); // temporary until state updates
+      await playSequence([...sequence, sequence[sequence.length - 1]]);
     }
   }, [sequence, round, addNewTileToSequence, playSequence]);
 
@@ -96,46 +98,26 @@ export default function GameScreen() {
     const newInput = [...userInput, tileId];
     setUserInput(newInput);
 
-    // Check if this press is correct so far
     const currentIndex = newInput.length - 1;
 
     if (sequence[currentIndex] !== tileId) {
-      // Wrong tile!
       setWrongTile(tileId);
-      setGameState('wrong');
       setIsProcessing(true);
 
-      // Flash red for 600ms then show feedback
       setTimeout(() => {
         setWrongTile(null);
-        setIsProcessing(false);
-        
-        Alert.alert(
-          'Wrong!',
-          `You tapped ${TILE_NAMES[tileId]} instead of ${TILE_NAMES[sequence[currentIndex]]}`,
-          [
-            {
-              text: 'Try Again',
-              onPress: () => {
-                // Reset for retrying the same sequence
-                setUserInput([]);
-                setGameState('playing');
-              },
-            },
-            {
-              text: 'Back to Home',
-              style: 'cancel',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
+        loseLife();
+
+        if (lives - 1 > 0) {
+          setUserInput([]);
+          setGameState('playing');
+          setIsProcessing(false);
+        }
       }, 650);
       return;
     }
 
-    // Correct so far
     if (newInput.length === sequence.length) {
-      // Completed the full sequence!
       setGameState('roundComplete');
       setIsProcessing(true);
 
@@ -143,24 +125,18 @@ export default function GameScreen() {
         setUserInput([]);
         setGameState('idle');
         setIsProcessing(false);
-        
-        // Auto start next round
         startNewRound();
       }, 900);
     }
-  }, [gameState, isProcessing, userInput, sequence, startNewRound, navigation]);
+  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives]);
 
-  // Initialize game on mount
   useEffect(() => {
-    // Small delay then start first round
     const timer = setTimeout(() => {
       startNewRound();
     }, 600);
-
     return () => clearTimeout(timer);
-  }, []); // Only run once on mount
+  }, []);
 
-  // Reset everything (for dev / future restart button)
   const resetGame = () => {
     setSequence([]);
     setUserInput([]);
@@ -169,13 +145,13 @@ export default function GameScreen() {
     setWrongTile(null);
     setRound(1);
     setIsProcessing(false);
-    
+    setLives(MAX_LIVES);
+
     setTimeout(() => {
       startNewRound();
     }, 300);
   };
 
-  // Render 3x3 grid
   const renderGrid = () => {
     const tiles = [];
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -189,7 +165,7 @@ export default function GameScreen() {
             color={TILE_COLORS[id]}
             isActive={activeTile === id}
             isWrong={wrongTile === id}
-            disabled={gameState !== 'playing' || isProcessing}
+            disabled={gameState !== 'playing' || isProcessing || gameState === 'gameOver'}
             onPress={handleTilePress}
             size={TILE_SIZE}
           />
@@ -204,32 +180,48 @@ export default function GameScreen() {
     return tiles;
   };
 
+  const renderLives = () => {
+    return (
+      <View style={styles.livesContainer}>
+        {Array.from({ length: MAX_LIVES }).map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.lifeDot,
+              {
+                backgroundColor: index < lives ? COLORS.cyan : '#1a1a2e',
+                borderColor: index < lives ? COLORS.cyan : '#333355',
+                shadowColor: index < lives ? COLORS.cyan : 'transparent',
+                shadowOpacity: index < lives ? 0.9 : 0,
+              },
+            ]}
+          />
+        ))}
+      </View>
+    );
+  };
+
   const getStatusText = () => {
+    if (gameState === 'gameOver') return 'GAME OVER';
     switch (gameState) {
-      case 'watching':
-        return 'WATCH CAREFULLY...';
-      case 'playing':
-        return 'YOUR TURN';
-      case 'roundComplete':
-        return 'NICE!';
-      case 'wrong':
-        return 'WRONG!';
-      default:
-        return mode.toUpperCase();
+      case 'watching': return 'WATCH CAREFULLY...';
+      case 'playing': return 'YOUR TURN';
+      case 'roundComplete': return 'NICE!';
+      case 'wrong': return 'WRONG!';
+      default: return mode.toUpperCase();
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backText}>← HOME</Text>
           </TouchableOpacity>
 
           <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>{getStatusText()}</Text>
+            <Text style={[styles.statusText, gameState === 'gameOver' && { color: COLORS.error }]}>{getStatusText()}</Text>
             <Text style={styles.roundText}>ROUND {round}</Text>
           </View>
 
@@ -238,15 +230,18 @@ export default function GameScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Grid */}
         <View style={styles.gridContainer}>
           {renderGrid()}
         </View>
 
-        {/* Bottom info */}
+        <View style={styles.livesSection}>
+          <Text style={styles.livesLabel}>LIVES</Text>
+          {renderLives()}
+        </View>
+
         <View style={styles.bottomInfo}>
           <Text style={styles.sequenceLength}>
-            Sequence length: {sequence.length}
+            Sequence: {sequence.length}
           </Text>
           {gameState === 'playing' && (
             <Text style={styles.inputProgress}>
@@ -255,10 +250,22 @@ export default function GameScreen() {
           )}
         </View>
 
-        {/* Dev note */}
-        <Text style={styles.devNote}>
-          Step 3 core mechanic • {mode} mode
-        </Text>
+        {gameState === 'gameOver' && (
+          <View style={styles.gameOverOverlay}>
+            <Text style={styles.gameOverTitle}>GAME OVER</Text>
+            <Text style={styles.gameOverScore}>Longest sequence: {sequence.length}</Text>
+
+            <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
+              <Text style={styles.retryText}>TRY AGAIN</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.homeButton} onPress={() => navigation.goBack()}>
+              <Text style={styles.homeText}>BACK TO HOME</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={styles.devNote}>Step 4 • Lives system</Text>
       </View>
     </SafeAreaView>
   );
@@ -280,7 +287,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     paddingHorizontal: 8,
   },
   backButton: {
@@ -307,7 +314,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resetButton: {
-    padding: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: '#1a1a2e',
     borderRadius: 8,
     borderWidth: 1,
@@ -329,10 +337,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  bottomInfo: {
-    marginTop: 32,
+  livesSection: {
+    marginTop: 28,
     alignItems: 'center',
-    gap: 6,
+  },
+  livesLabel: {
+    color: '#666688',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  livesContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  lifeDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  bottomInfo: {
+    marginTop: 20,
+    alignItems: 'center',
+    gap: 4,
   },
   sequenceLength: {
     color: '#666688',
@@ -340,12 +372,57 @@ const styles = StyleSheet.create({
   },
   inputProgress: {
     color: COLORS.cyan,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+  },
+  gameOverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  gameOverTitle: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: COLORS.error,
+    letterSpacing: 4,
+    marginBottom: 12,
+  },
+  gameOverScore: {
+    fontSize: 18,
+    color: '#CCCCDD',
+    marginBottom: 40,
+  },
+  retryButton: {
+    backgroundColor: COLORS.cyan,
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginBottom: 16,
+  },
+  retryText: {
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  homeButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+  },
+  homeText: {
+    color: '#888888',
+    fontSize: 16,
+    fontWeight: '600',
   },
   devNote: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 16,
     color: '#333355',
     fontSize: 11,
   },
