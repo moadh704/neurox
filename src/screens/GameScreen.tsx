@@ -155,11 +155,11 @@ export default function GameScreen() {
         const startingLevel = await loadClassicProgress();
         setTimeout(() => {
           startNewRound(startingLevel);
-        }, 600);
+        }, 500);
       } else {
         setTimeout(() => {
           startNewRound(1);
-        }, 600);
+        }, 500);
       }
     };
     initGame();
@@ -309,7 +309,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 11 • Twist Modes</Text>
+        <Text style={styles.devNote}>Neurox • Final Polish</Text>
       </View>
     </SafeAreaView>
   );
