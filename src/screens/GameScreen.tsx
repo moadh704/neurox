@@ -116,7 +116,7 @@ export default function GameScreen() {
       const newLevel = currentLevel + 1;
       setLevel(newLevel);
 
-      // Save progress if playing Classic mode
+      // Save progress only in Classic mode
       if (mode === 'classic') {
         try {
           await AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, newLevel.toString());
@@ -128,7 +128,7 @@ export default function GameScreen() {
     }
   }, [sequence, level, addNewTileToSequence, playSequence, mode]);
 
-  // Load saved classic progress
+  // Load saved classic progress (only for Classic mode)
   const loadClassicProgress = async () => {
     if (mode === 'classic') {
       try {
@@ -148,10 +148,17 @@ export default function GameScreen() {
   // Initialize game
   useEffect(() => {
     const initGame = async () => {
-      const startingLevel = await loadClassicProgress();
-      setTimeout(() => {
-        startNewRound(startingLevel);
-      }, 600);
+      if (mode === 'classic') {
+        const startingLevel = await loadClassicProgress();
+        setTimeout(() => {
+          startNewRound(startingLevel);
+        }, 600);
+      } else {
+        // Survival and other modes always start fresh from level 1
+        setTimeout(() => {
+          startNewRound(1);
+        }, 600);
+      }
     };
     initGame();
   }, []);
@@ -260,7 +267,7 @@ export default function GameScreen() {
 
         <View style={styles.bottomInfo}>
           <Text style={styles.sequenceLength}>
-            Sequence: {sequence.length}
+            {mode === 'survival' ? 'SCORE' : 'SEQUENCE'}: {sequence.length}
           </Text>
           {gameState === 'playing' && (
             <Text style={styles.inputProgress}>
@@ -284,7 +291,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 7 • Classic Mode</Text>
+        <Text style={styles.devNote}>Step 8 • Survival Mode</Text>
       </View>
     </SafeAreaView>
   );
