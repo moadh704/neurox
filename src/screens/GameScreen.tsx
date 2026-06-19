@@ -12,6 +12,7 @@ import { RootStackParamList } from '../../App';
 import { COLORS, TILE_COLORS, TILE_NAMES } from '../constants/colors';
 import Tile from '../components/Tile';
 import { useSound } from '../hooks/useSound';
+import { useHaptics } from '../hooks/useHaptics';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -26,6 +27,7 @@ export default function GameScreen() {
   const { mode } = route.params;
 
   const { playTileSound, playWrong, playRoundComplete, playGameOver } = useSound();
+  const { lightImpact, mediumImpact, heavyImpact, success, error: hapticError } = useHaptics();
 
   // Core game state
   const [sequence, setSequence] = useState<number[]>([]);
@@ -73,8 +75,10 @@ export default function GameScreen() {
       setGameState('gameOver');
       setIsProcessing(true);
       playGameOver();
+      hapticError();
+      heavyImpact();
     }
-  }, [lives, playGameOver]);
+  }, [lives, playGameOver, hapticError, heavyImpact]);
 
   // Start a new round
   const startNewRound = useCallback(async () => {
@@ -109,6 +113,8 @@ export default function GameScreen() {
       setWrongTile(tileId);
       setIsProcessing(true);
       playWrong();
+      hapticError();
+      heavyImpact();
 
       setTimeout(() => {
         setWrongTile(null);
@@ -126,11 +132,13 @@ export default function GameScreen() {
     // Correct press
     if (newInput.length === sequence.length) {
       playTileSound(tileId);
+      mediumImpact();
       setGameState('roundComplete');
       setIsProcessing(true);
 
       setTimeout(() => {
         playRoundComplete();
+        success();
         setUserInput([]);
         setGameState('idle');
         setIsProcessing(false);
@@ -138,8 +146,9 @@ export default function GameScreen() {
       }, 900);
     } else {
       playTileSound(tileId);
+      lightImpact();
     }
-  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, playTileSound, playRoundComplete, playWrong]);
+  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, playTileSound, playRoundComplete, playWrong, lightImpact, mediumImpact, success]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -276,7 +285,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 5 • Sound system</Text>
+        <Text style={styles.devNote}>Step 6 • Haptics</Text>
       </View>
     </SafeAreaView>
   );
