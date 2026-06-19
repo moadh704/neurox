@@ -11,6 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { COLORS, TILE_COLORS, TILE_NAMES } from '../constants/colors';
 import Tile from '../components/Tile';
+import { useSound } from '../hooks/useSound';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -23,6 +24,8 @@ export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
   const navigation = useNavigation<NavProp>();
   const { mode } = route.params;
+
+  const { playTileSound, playWrong, playRoundComplete, playGameOver } = useSound();
 
   // Core game state
   const [sequence, setSequence] = useState<number[]>([]);
@@ -69,8 +72,9 @@ export default function GameScreen() {
     if (newLives <= 0) {
       setGameState('gameOver');
       setIsProcessing(true);
+      playGameOver();
     }
-  }, [lives]);
+  }, [lives, playGameOver]);
 
   // Start a new round
   const startNewRound = useCallback(async () => {
@@ -101,8 +105,10 @@ export default function GameScreen() {
     const currentIndex = newInput.length - 1;
 
     if (sequence[currentIndex] !== tileId) {
+      // Wrong tile!
       setWrongTile(tileId);
       setIsProcessing(true);
+      playWrong();
 
       setTimeout(() => {
         setWrongTile(null);
@@ -117,18 +123,23 @@ export default function GameScreen() {
       return;
     }
 
+    // Correct press
     if (newInput.length === sequence.length) {
+      playTileSound(tileId);
       setGameState('roundComplete');
       setIsProcessing(true);
 
       setTimeout(() => {
+        playRoundComplete();
         setUserInput([]);
         setGameState('idle');
         setIsProcessing(false);
         startNewRound();
       }, 900);
+    } else {
+      playTileSound(tileId);
     }
-  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives]);
+  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, playTileSound, playRoundComplete, playWrong]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -265,7 +276,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 4 • Lives system</Text>
+        <Text style={styles.devNote}>Step 5 • Sound system</Text>
       </View>
     </SafeAreaView>
   );
