@@ -13,6 +13,7 @@ import { COLORS, TILE_COLORS, TILE_NAMES } from '../constants/colors';
 import Tile from '../components/Tile';
 import { useSound } from '../hooks/useSound';
 import { useHaptics } from '../hooks/useHaptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -20,6 +21,19 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 const GRID_SIZE = 3;
 const TILE_SIZE = 92;
 const MAX_LIVES = 3;
+
+const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
+
+// Speed scaling for flashing
+const getFlashTiming = (level: number) => {
+  if (level <= 5) {
+    return { flashDuration: 520, gap: 200 };      // Slow
+  } else if (level <= 12) {
+    return { flashDuration: 360, gap: 130 };     // Medium
+  } else {
+    return { flashDuration: 200, gap: 70 };      // Fast
+  }
+};
 
 export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
@@ -35,7 +49,7 @@ export default function GameScreen() {
   const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'roundComplete' | 'wrong' | 'gameOver'>('idle');
   const [activeTile, setActiveTile] = useState<number | null>(null);
   const [wrongTile, setWrongTile] = useState<number | null>(null);
-  const [round, setRound] = useState(1);
+  const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
 
@@ -45,8 +59,10 @@ export default function GameScreen() {
     setSequence(prev => [...prev, randomTile]);
   }, []);
 
-  // Play the current sequence with flashing animations
-  const playSequence = useCallback(async (seq: number[]) => {
+  // Play the current sequence with flashing animations (speed depends on level)
+  const playSequence = useCallback(async (seq: number[], currentLevel: number = level) => {
+    const { flashDuration, gap } = getFlashTiming(currentLevel);
+
     setGameState('watching');
     setIsProcessing(true);
     setUserInput([]);
@@ -54,17 +70,17 @@ export default function GameScreen() {
     for (let i = 0; i < seq.length; i++) {
       const tileId = seq[i];
       setActiveTile(tileId);
-      await new Promise(resolve => setTimeout(resolve, 420));
+      await new Promise(resolve => setTimeout(resolve, flashDuration));
       setActiveTile(null);
       if (i < seq.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 180));
+        await new Promise(resolve => setTimeout(resolve, gap));
       }
     }
 
     setActiveTile(null);
     setIsProcessing(false);
     setGameState('playing');
-  }, []);
+  }, [level]);
 
   // Lose a life
   const loseLife = useCallback(() => {
@@ -80,81 +96,64 @@ export default function GameScreen() {
     }
   }, [lives, playGameOver, hapticError, heavyImpact]);
 
-  // Start a new round
-  const startNewRound = useCallback(async () => {
+  // Start a new round / level
+  const startNewRound = useCallback(async (startingLevel?: number) => {
+    const currentLevel = startingLevel || level;
+
     if (sequence.length === 0) {
-      const firstTile = Math.floor(Math.random() * 9);
-      const newSeq = [firstTile];
+      // Generate initial sequence based on saved level (for Classic)
+      let newSeq: number[] = [];
+      for (let i = 0; i < currentLevel; i++) {
+        newSeq.push(Math.floor(Math.random() * 9));
+      }
       setSequence(newSeq);
-      setRound(1);
+      setLevel(currentLevel);
       setLives(MAX_LIVES);
       await new Promise(resolve => setTimeout(resolve, 300));
-      await playSequence(newSeq);
+      await playSequence(newSeq, currentLevel);
     } else {
       addNewTileToSequence();
-      const newRound = round + 1;
-      setRound(newRound);
+      const newLevel = currentLevel + 1;
+      setLevel(newLevel);
+
+      // Save progress if playing Classic mode
+      if (mode === 'classic') {
+        try {
+          await AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, newLevel.toString());
+        } catch (e) {}
+      }
+
       await new Promise(resolve => setTimeout(resolve, 400));
-      await playSequence([...sequence, sequence[sequence.length - 1]]);
+      await playSequence([...sequence, sequence[sequence.length - 1]], newLevel);
     }
-  }, [sequence, round, addNewTileToSequence, playSequence]);
+  }, [sequence, level, addNewTileToSequence, playSequence, mode]);
 
-  // Handle tile press from user
-  const handleTilePress = useCallback((tileId: number) => {
-    if (gameState !== 'playing' || isProcessing) return;
-
-    const newInput = [...userInput, tileId];
-    setUserInput(newInput);
-
-    const currentIndex = newInput.length - 1;
-
-    if (sequence[currentIndex] !== tileId) {
-      // Wrong tile!
-      setWrongTile(tileId);
-      setIsProcessing(true);
-      playWrong();
-      hapticError();
-      heavyImpact();
-
-      setTimeout(() => {
-        setWrongTile(null);
-        loseLife();
-
-        if (lives - 1 > 0) {
-          setUserInput([]);
-          setGameState('playing');
-          setIsProcessing(false);
+  // Load saved classic progress
+  const loadClassicProgress = async () => {
+    if (mode === 'classic') {
+      try {
+        const savedLevel = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
+        if (savedLevel) {
+          const parsed = parseInt(savedLevel, 10);
+          setLevel(Math.max(1, parsed));
+          return parsed;
         }
-      }, 650);
-      return;
+      } catch (e) {
+        console.log('Failed to load classic progress');
+      }
     }
+    return 1;
+  };
 
-    // Correct press
-    if (newInput.length === sequence.length) {
-      playTileSound(tileId);
-      mediumImpact();
-      setGameState('roundComplete');
-      setIsProcessing(true);
-
-      setTimeout(() => {
-        playRoundComplete();
-        success();
-        setUserInput([]);
-        setGameState('idle');
-        setIsProcessing(false);
-        startNewRound();
-      }, 900);
-    } else {
-      playTileSound(tileId);
-      lightImpact();
-    }
-  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, playTileSound, playRoundComplete, playWrong, lightImpact, mediumImpact, success]);
-
+  // Initialize game
   useEffect(() => {
-    const timer = setTimeout(() => {
-      startNewRound();
-    }, 600);
-    return () => clearTimeout(timer);
+    const initGame = async () => {
+      const startingLevel = await loadClassicProgress();
+      setTimeout(() => {
+        startNewRound(startingLevel);
+      }, 600);
+    };
+    initGame();
   }, []);
 
   const resetGame = () => {
@@ -163,7 +162,7 @@ export default function GameScreen() {
     setGameState('idle');
     setActiveTile(null);
     setWrongTile(null);
-    setRound(1);
+    setLevel(1);
     setIsProcessing(false);
     setLives(MAX_LIVES);
 
@@ -242,7 +241,7 @@ export default function GameScreen() {
 
           <View style={styles.statusContainer}>
             <Text style={[styles.statusText, gameState === 'gameOver' && { color: COLORS.error }]}>{getStatusText()}</Text>
-            <Text style={styles.roundText}>ROUND {round}</Text>
+            <Text style={styles.roundText}>LEVEL {level}</Text>
           </View>
 
           <TouchableOpacity onPress={resetGame} style={styles.resetButton}>
@@ -285,7 +284,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 6 • Haptics</Text>
+        <Text style={styles.devNote}>Step 7 • Classic Mode</Text>
       </View>
     </SafeAreaView>
   );
