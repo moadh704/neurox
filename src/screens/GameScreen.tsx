@@ -96,7 +96,6 @@ export default function GameScreen() {
       hapticError();
       heavyImpact();
 
-      // Check for new best
       if (sequence.length > personalBest) {
         setPersonalBest(sequence.length);
         setShowNewBest(true);
@@ -109,7 +108,6 @@ export default function GameScreen() {
     const currentLevel = startingLevel || level;
 
     if (sequence.length === 0) {
-      // Generate initial sequence based on saved level (for Classic)
       let newSeq: number[] = [];
       for (let i = 0; i < currentLevel; i++) {
         newSeq.push(Math.floor(Math.random() * 9));
@@ -124,7 +122,6 @@ export default function GameScreen() {
       const newLevel = currentLevel + 1;
       setLevel(newLevel);
 
-      // Save progress only in Classic mode
       if (mode === 'classic') {
         try {
           await AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, newLevel.toString());
@@ -136,7 +133,6 @@ export default function GameScreen() {
     }
   }, [sequence, level, addNewTileToSequence, playSequence, mode]);
 
-  // Load saved classic progress (only for Classic mode)
   const loadClassicProgress = async () => {
     if (mode === 'classic') {
       try {
@@ -153,7 +149,6 @@ export default function GameScreen() {
     return 1;
   };
 
-  // Initialize game
   useEffect(() => {
     const initGame = async () => {
       if (mode === 'classic') {
@@ -162,7 +157,6 @@ export default function GameScreen() {
           startNewRound(startingLevel);
         }, 600);
       } else {
-        // Survival and other modes always start fresh from level 1
         setTimeout(() => {
           startNewRound(1);
         }, 600);
@@ -203,6 +197,7 @@ export default function GameScreen() {
             disabled={gameState !== 'playing' || isProcessing || gameState === 'gameOver'}
             onPress={handleTilePress}
             size={TILE_SIZE}
+            ghostMode={mode === 'ghost' && gameState === 'playing'}
           />
         );
       }
@@ -314,7 +309,7 @@ export default function GameScreen() {
           </View>
         )}
 
-        <Text style={styles.devNote}>Step 9 • Game Screens</Text>
+        <Text style={styles.devNote}>Step 11 • Twist Modes</Text>
       </View>
     </SafeAreaView>
   );
