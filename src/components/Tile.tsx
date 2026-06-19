@@ -17,6 +17,7 @@ interface TileProps {
   disabled?: boolean;
   onPress: (id: number) => void;
   size?: number;
+  ghostMode?: boolean;
 }
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
@@ -29,6 +30,7 @@ export default function Tile({
   disabled = false,
   onPress,
   size = 92,
+  ghostMode = false,
 }: TileProps) {
   const scale = useSharedValue(1);
   const glow = useSharedValue(0);
@@ -59,7 +61,9 @@ export default function Tile({
       ? '#FF3366'
       : isActive
         ? color
-        : COLORS.tileIdle;
+        : ghostMode
+          ? COLORS.tileIdle
+          : COLORS.tileIdle;
 
     const shadowOpacity = interpolateColor(
       glow.value,
@@ -71,14 +75,13 @@ export default function Tile({
       transform: [{ scale: scale.value }],
       backgroundColor,
       shadowColor: isWrong ? '#FF3366' : color,
-      shadowOpacity: isActive || isWrong ? 0.9 : 0.25,
-      shadowRadius: isActive || isWrong ? 18 : 6,
+      shadowOpacity: (isActive || isWrong) && !ghostMode ? 0.9 : 0.25,
+      shadowRadius: (isActive || isWrong) && !ghostMode ? 18 : 6,
     };
   });
 
   const handlePress = () => {
     if (!disabled) {
-      // Quick press feedback
       scale.value = withSpring(0.92, { damping: 20, stiffness: 400 });
       setTimeout(() => {
         scale.value = withSpring(1, { damping: 15, stiffness: 250 });
@@ -102,7 +105,6 @@ export default function Tile({
         animatedStyle,
       ]}
     >
-      {/* Subtle inner glow / label for dev */}
       <View style={styles.innerGlow} />
     </AnimatedTouchable>
   );
