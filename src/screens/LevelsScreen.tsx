@@ -15,19 +15,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
-const TOTAL_LEVELS = 20; // For now, we show 20 levels
+const TOTAL_LEVELS = 20;
 
 export default function LevelsScreen() {
   const navigation = useNavigation<NavProp>();
-  const [unlockedLevel, setUnlockedLevel] = useState(1); // highest level player can play
+  const [unlockedLevel, setUnlockedLevel] = useState(1);
 
   useEffect(() => {
     const loadProgress = async () => {
       try {
         const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
-        if (saved) {
-          setUnlockedLevel(parseInt(saved));
-        }
+        if (saved) setUnlockedLevel(parseInt(saved));
       } catch {}
     };
     loadProgress();
