@@ -42,6 +42,7 @@ export default function GameScreen() {
   const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(3);
+  const [showLevelCompleteUI, setShowLevelCompleteUI] = useState(false);
 
   const gridShake = useRef(new Animated.Value(0)).current;
   const successPulse = useRef(new Animated.Value(1)).current;
@@ -86,6 +87,7 @@ export default function GameScreen() {
     setSequence(newSeq);
     setLevel(currentLevel);
     setLives(3);
+    setShowLevelCompleteUI(false);
     await new Promise(r => setTimeout(r, 160));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
@@ -107,7 +109,26 @@ export default function GameScreen() {
     init();
   }, []);
 
-  // Enhanced wrong feedback - more dramatic
+  // Grid Wave Celebration when level is completed
+  const playLevelCompleteWave = async () => {
+    setShowLevelCompleteUI(false);
+
+    // Wave pattern: left to right, top to bottom
+    const waveOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+    for (let i = 0; i < waveOrder.length; i++) {
+      setActiveTile(waveOrder[i]);
+      await new Promise(r => setTimeout(r, 70)); // wave speed
+    }
+
+    setActiveTile(null);
+
+    // Show the UI after the wave
+    setTimeout(() => {
+      setShowLevelCompleteUI(true);
+    }, 150);
+  };
+
   const triggerWrongFeedback = () => {
     Animated.sequence([
       Animated.timing(gridShake, { toValue: 10, duration: 50, useNativeDriver: true }),
@@ -118,7 +139,6 @@ export default function GameScreen() {
     ]).start();
   };
 
-  // Stronger success pulse on level complete
   const triggerSuccessPulse = () => {
     Animated.sequence([
       Animated.timing(successPulse, { toValue: 1.12, duration: 90, useNativeDriver: true }),
@@ -151,16 +171,11 @@ export default function GameScreen() {
       return;
     }
 
-    // Correct tap - small satisfying pulse
-    if (newInput.length < sequence.length) {
-      // Small pop on correct mid-sequence tap
-      // (we can enhance Tile for this later if needed)
-    }
-
     if (newInput.length === sequence.length) {
       setGameState('levelComplete');
       setIsProcessing(true);
       triggerSuccessPulse();
+      playLevelCompleteWave();
 
       if (mode === 'classic') {
         AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1));
@@ -172,6 +187,7 @@ export default function GameScreen() {
     setUserInput([]);
     setGameState('idle');
     setIsProcessing(false);
+    setShowLevelCompleteUI(false);
     startNewRound(level + 1);
   };
 
@@ -184,6 +200,7 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(3);
+    setShowLevelCompleteUI(false);
     setTimeout(() => startNewRound(1), 160);
   };
 
@@ -243,7 +260,7 @@ export default function GameScreen() {
             </Animated.View>
           </Animated.View>
 
-          {gameState === 'levelComplete' && (
+          {gameState === 'levelComplete' && showLevelCompleteUI && (
             <View style={styles.levelCompleteContainer}>
               <Text style={styles.levelCompleteTitle}>Level Complete!</Text>
               <TouchableOpacity style={styles.nextButton} onPress={goToNextLevel}>
