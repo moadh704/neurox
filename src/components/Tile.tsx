@@ -35,7 +35,6 @@ export default function Tile({
   const scale = useSharedValue(1);
   const glow = useSharedValue(0);
 
-  // Active / glow animation
   React.useEffect(() => {
     if (isActive) {
       glow.value = withTiming(1, { duration: 120 });
@@ -46,7 +45,6 @@ export default function Tile({
     }
   }, [isActive]);
 
-  // Wrong flash effect
   React.useEffect(() => {
     if (isWrong) {
       scale.value = withTiming(0.92, { duration: 80 });
@@ -65,18 +63,20 @@ export default function Tile({
           ? COLORS.tileIdle
           : COLORS.tileIdle;
 
-    const shadowOpacity = interpolateColor(
-      glow.value,
-      [0, 1],
-      [0.15, 0.85]
-    );
+    // Neutral calm glow for ALL idle tiles. Color only appears when active.
+    const effectiveShadowColor = (isActive || isWrong)
+      ? (isWrong ? '#FF3366' : color)
+      : '#A8B8D0'; // single neutral glow color for idle state
+
+    const shadowOpacity = isActive || isWrong ? 0.85 : 0.18;
+    const shadowRadius = isActive || isWrong ? 16 : 5;
 
     return {
       transform: [{ scale: scale.value }],
       backgroundColor,
-      shadowColor: isWrong ? '#FF3366' : color,
-      shadowOpacity: (isActive || isWrong) && !ghostMode ? 0.9 : 0.25,
-      shadowRadius: (isActive || isWrong) && !ghostMode ? 18 : 6,
+      shadowColor: effectiveShadowColor,
+      shadowOpacity,
+      shadowRadius,
     };
   });
 
