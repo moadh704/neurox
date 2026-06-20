@@ -13,6 +13,7 @@ import { RootStackParamList } from '../../App';
 import { COLORS, TILE_COLORS } from '../constants/colors';
 import Tile from '../components/Tile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -109,21 +110,18 @@ export default function GameScreen() {
     init();
   }, []);
 
-  // Grid Wave Celebration when level is completed
   const playLevelCompleteWave = async () => {
     setShowLevelCompleteUI(false);
 
-    // Wave pattern: left to right, top to bottom
     const waveOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
     for (let i = 0; i < waveOrder.length; i++) {
       setActiveTile(waveOrder[i]);
-      await new Promise(r => setTimeout(r, 70)); // wave speed
+      await new Promise(r => setTimeout(r, 70));
     }
 
     setActiveTile(null);
 
-    // Show the UI after the wave
     setTimeout(() => {
       setShowLevelCompleteUI(true);
     }, 150);
@@ -208,9 +206,12 @@ export default function GameScreen() {
     return (
       <View style={styles.livesContainer}>
         {[1, 2, 3].map((i) => (
-          <Text key={i} style={styles.heart}>
-            {i <= lives ? '❤️' : '♡'}
-          </Text>
+          <Ionicons
+            key={i}
+            name={i <= lives ? 'heart' : 'heart-outline'}
+            size={22}
+            color={i <= lives ? '#FF3B5C' : '#555577'}
+          />
         ))}
       </View>
     );
@@ -245,7 +246,7 @@ export default function GameScreen() {
       <View style={styles.container}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.topIcon}>←</Text>
+            <Ionicons name="chevron-back" size={28} color="#888888" />
           </TouchableOpacity>
 
           <Text style={styles.levelInBar}>LEVEL {level}</Text>
@@ -291,10 +292,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
   },
-  topIcon: { color: '#888888', fontSize: 26, fontWeight: '300' },
   levelInBar: { color: '#00f0ff', fontSize: 17, fontWeight: '700', letterSpacing: 1 },
-  livesContainer: { flexDirection: 'row', gap: 8 },
-  heart: { fontSize: 22 },
+  livesContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 
   content: {
     flex: 1,
