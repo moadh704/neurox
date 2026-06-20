@@ -19,7 +19,6 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavProp>();
   const [currentLevel, setCurrentLevel] = useState(1);
 
-  // Load real progress
   useEffect(() => {
     const loadProgress = async () => {
       try {
@@ -37,13 +36,11 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header - clean like Arrows */}
         <View style={styles.header}>
           <Text style={styles.logo}>NEUROX</Text>
           <Text style={styles.levelText}>Level {currentLevel}</Text>
         </View>
 
-        {/* Mode Selection - clean cards */}
         <View style={styles.modesContainer}>
           <TouchableOpacity style={styles.modeCard} onPress={() => goToMode('classic')}>
             <Text style={styles.modeTitle}>Classic</Text>
@@ -61,7 +58,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem} onPress={() => {}}>
             <Text style={styles.navIcon}>🏠</Text>
@@ -70,7 +66,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.navItem}
-            onPress={() => navigation.navigate('Game', { mode: 'classic' })}
+            onPress={() => navigation.navigate('Levels')}
           >
             <Text style={styles.navIcon}>🔒</Text>
             <Text style={styles.navLabel}>Levels</Text>
