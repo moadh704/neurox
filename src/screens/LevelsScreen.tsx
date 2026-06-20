@@ -39,24 +39,29 @@ export default function LevelsScreen() {
     const isUnlocked = levelNum <= unlockedLevel;
     const isCurrent = levelNum === unlockedLevel;
 
+    let content;
+    if (isUnlocked) {
+      content = (
+        <Text style={[styles.levelNumber, isCurrent && styles.currentText]}>
+          {levelNum}
+        </Text>
+      );
+    } else {
+      content = <Text style={styles.lockIcon}>🔒</Text>;
+    }
+
     return (
       <TouchableOpacity
         key={levelNum}
         style={[
           styles.levelBox,
           isCurrent && styles.currentLevel,
-          !isUnlocked && styles.lockedLevel
+          !isUnlocked && styles.lockedLevel,
         ]}
         onPress={() => isUnlocked && startLevel(levelNum)}
         disabled={!isUnlocked}
       >
-        {isUnlocked ? (
-          <Text style={[styles.levelNumber, isCurrent && styles.currentText]}>
-            {levelNum}
-          </Text>
-        ) : (
-          <Text style={styles.lockIcon}>🔒</Text>
-        ))}
+        {content}
       </TouchableOpacity>
     );
   };
