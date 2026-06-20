@@ -107,20 +107,22 @@ export default function GameScreen() {
     init();
   }, []);
 
+  // Enhanced wrong feedback - more dramatic
   const triggerWrongFeedback = () => {
     Animated.sequence([
-      Animated.timing(gridShake, { toValue: 7, duration: 55, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: -7, duration: 55, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: 5, duration: 45, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: -5, duration: 45, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: 0, duration: 55, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: 10, duration: 50, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: -10, duration: 50, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: 8, duration: 45, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: -8, duration: 45, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: 0, duration: 60, useNativeDriver: true }),
     ]).start();
   };
 
+  // Stronger success pulse on level complete
   const triggerSuccessPulse = () => {
     Animated.sequence([
-      Animated.timing(successPulse, { toValue: 1.06, duration: 100, useNativeDriver: true }),
-      Animated.timing(successPulse, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.timing(successPulse, { toValue: 1.12, duration: 90, useNativeDriver: true }),
+      Animated.timing(successPulse, { toValue: 1, duration: 220, useNativeDriver: true }),
     ]).start();
   };
 
@@ -145,8 +147,14 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 450);
+      }, 420);
       return;
+    }
+
+    // Correct tap - small satisfying pulse
+    if (newInput.length < sequence.length) {
+      // Small pop on correct mid-sequence tap
+      // (we can enhance Tile for this later if needed)
     }
 
     if (newInput.length === sequence.length) {
@@ -218,7 +226,6 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.topIcon}>←</Text>
@@ -229,7 +236,6 @@ export default function GameScreen() {
           {renderLives()}
         </View>
 
-        {/* Centered Game Content */}
         <View style={styles.content}>
           <Animated.View style={[styles.gridWrapper, { transform: [{ translateX: gridShake }] }]}>
             <Animated.View style={[styles.gridContainer, { transform: [{ scale: successPulse }] }]}>
