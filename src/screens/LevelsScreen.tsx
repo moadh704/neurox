@@ -45,7 +45,7 @@ export default function LevelsScreen() {
         style={[
           styles.levelBox,
           isCurrent && styles.currentLevel,
-          !isUnlocked && styles.lockedLevel,
+          !isUnlocked && styles.lockedLevel
         ]}
         onPress={() => isUnlocked && startLevel(levelNum)}
         disabled={!isUnlocked}
@@ -71,10 +71,7 @@ export default function LevelsScreen() {
           {Array.from({ length: TOTAL_LEVELS }, (_, i) => renderLevel(i + 1))}
         </ScrollView>
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
