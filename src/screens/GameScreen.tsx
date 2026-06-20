@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { COLORS, TILE_COLORS } from '../constants/colors';
 import Tile from '../components/Tile';
-import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
@@ -23,41 +22,10 @@ const MAX_LIVES = 3;
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 
-// Preload sounds for better performance
-const soundFiles = {
-  tile: require('../../assets/sounds/tile.mp3'),
-  wrong: require('../../assets/sounds/wrong.mp3'),
-  success: require('../../assets/sounds/success.mp3'),
-  gameover: require('../../assets/sounds/gameover.mp3'),
-};
-
-let soundObjects: { [key: string]: Audio.Sound } = {};
-
-const loadSounds = async () => {
-  try {
-    for (const [key, file] of Object.entries(soundFiles)) {
-      const { sound } = await Audio.Sound.createAsync(file, { shouldPlay: false });
-      soundObjects[key] = sound;
-    }
-  } catch (e) {
-    console.log('Sound loading error:', e);
-  }
-};
-
-const playSound = async (type: 'tile' | 'wrong' | 'success' | 'gameover') => {
-  try {
-    if (soundObjects[type]) {
-      await soundObjects[type].replayAsync();
-    }
-  } catch (e) {
-    console.log('Play sound error:', e);
-  }
-};
-
 const getFlashTiming = (level: number) => {
-  if (level <= 5) return { flashDuration: 420, gap: 160 };
-  if (level <= 12) return { flashDuration: 280, gap: 100 };
-  return { flashDuration: 160, gap: 60 };
+  if (level <= 5) return { flashDuration: 380, gap: 140 };
+  if (level <= 12) return { flashDuration: 260, gap: 90 };
+  return { flashDuration: 150, gap: 55 };
 };
 
 export default function GameScreen() {
@@ -73,15 +41,6 @@ export default function GameScreen() {
   const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
-
-  // Load sounds once when component mounts
-  useEffect(() => {
-    loadSounds();
-    return () => {
-      // Unload sounds when leaving screen
-      Object.values(soundObjects).forEach(sound => sound.unloadAsync());
-    };
-  }, []);
 
   const addNewTileToSequence = useCallback(() => {
     const randomTile = Math.floor(Math.random() * 9);
@@ -111,7 +70,6 @@ export default function GameScreen() {
     if (newLives <= 0) {
       setGameState('gameOver');
       setIsProcessing(true);
-      playSound('gameover');
     }
   }, [lives]);
 
@@ -124,7 +82,7 @@ export default function GameScreen() {
     setSequence(newSeq);
     setLevel(currentLevel);
     setLives(MAX_LIVES);
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 200));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
 
@@ -134,12 +92,12 @@ export default function GameScreen() {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
           const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 350);
+          setTimeout(() => startNewRound(startLevel), 300);
         } catch {
-          setTimeout(() => startNewRound(1), 350);
+          setTimeout(() => startNewRound(1), 300);
         }
       } else {
-        setTimeout(() => startNewRound(1), 350);
+        setTimeout(() => startNewRound(1), 300);
       }
     };
     init();
@@ -156,7 +114,6 @@ export default function GameScreen() {
     if (sequence[currentIndex] !== tileId) {
       setWrongTile(tileId);
       setIsProcessing(true);
-      playSound('wrong');
 
       setTimeout(() => {
         setWrongTile(null);
@@ -166,23 +123,20 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 550);
+      }, 500);
       return;
     }
-
-    playSound('tile');
 
     if (newInput.length === sequence.length) {
       setGameState('roundComplete');
       setIsProcessing(true);
 
       setTimeout(() => {
-        playSound('success');
         setUserInput([]);
         setGameState('idle');
         setIsProcessing(false);
         startNewRound(level + 1);
-      }, 700);
+      }, 650);
     }
   }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, level]);
 
@@ -195,7 +149,7 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(MAX_LIVES);
-    setTimeout(() => startNewRound(1), 250);
+    setTimeout(() => startNewRound(1), 200);
   };
 
   const renderGrid = () => {
