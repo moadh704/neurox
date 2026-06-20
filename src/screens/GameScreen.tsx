@@ -17,15 +17,15 @@ type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const GRID_SIZE = 3;
-const TILE_SIZE = 92;
+const TILE_SIZE = 90;
 const MAX_LIVES = 3;
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 
 const getFlashTiming = (level: number) => {
-  if (level <= 5) return { flashDuration: 360, gap: 130 };
-  if (level <= 12) return { flashDuration: 240, gap: 85 };
-  return { flashDuration: 140, gap: 50 };
+  if (level <= 5) return { flashDuration: 380, gap: 140 };
+  if (level <= 12) return { flashDuration: 260, gap: 90 };
+  return { flashDuration: 160, gap: 60 };
 };
 
 export default function GameScreen() {
@@ -82,7 +82,7 @@ export default function GameScreen() {
     setSequence(newSeq);
     setLevel(currentLevel);
     setLives(MAX_LIVES);
-    await new Promise(r => setTimeout(r, 180));
+    await new Promise(r => setTimeout(r, 200));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
 
@@ -92,12 +92,12 @@ export default function GameScreen() {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
           const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 280);
+          setTimeout(() => startNewRound(startLevel), 300);
         } catch {
-          setTimeout(() => startNewRound(1), 280);
+          setTimeout(() => startNewRound(1), 300);
         }
       } else {
-        setTimeout(() => startNewRound(1), 280);
+        setTimeout(() => startNewRound(1), 300);
       }
     };
     init();
@@ -123,7 +123,7 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 480);
+      }, 500);
       return;
     }
 
@@ -136,7 +136,7 @@ export default function GameScreen() {
         setGameState('idle');
         setIsProcessing(false);
         startNewRound(level + 1);
-      }, 620);
+      }, 650);
     }
   }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, level]);
 
@@ -149,7 +149,7 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(MAX_LIVES);
-    setTimeout(() => startNewRound(1), 180);
+    setTimeout(() => startNewRound(1), 200);
   };
 
   const renderLives = () => {
@@ -160,10 +160,7 @@ export default function GameScreen() {
             key={index}
             style={[
               styles.lifeDot,
-              {
-                backgroundColor: index < lives ? '#00f0ff' : '#1a1a2e',
-                borderColor: index < lives ? '#00f0ff' : '#333355',
-              },
+              { backgroundColor: index < lives ? '#00f0ff' : '#222233' }
             ]}
           />
         ))}
@@ -198,30 +195,34 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Top Bar - very minimal like Arrows */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← HOME</Text>
-          </TouchableOpacity>
-          <Text style={styles.statusText}>
-            {gameState === 'gameOver' ? 'GAME OVER' : gameState.toUpperCase()}
-          </Text>
-          <TouchableOpacity onPress={resetGame}>
-            <Text style={styles.resetText}>RESET</Text>
-          </TouchableOpacity>
+          <View style={styles.topLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.topIcon}>←</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={resetGame} style={{ marginLeft: 16 }}>
+              <Text style={styles.topIcon}>↻</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Lives on the right */}
+          <View style={styles.topRight}>
+            {renderLives()}
+          </View>
         </View>
 
-        <View style={styles.gridContainer}>{renderGrid()}</View>
-
-        <Text style={styles.levelText}>LEVEL {level}</Text>
-
-        <View style={styles.livesSection}>
-          <Text style={styles.livesLabel}>LIVES</Text>
-          {renderLives()}
+        {/* Grid - centered and clean */}
+        <View style={styles.gridWrapper}>
+          <View style={styles.gridContainer}>{renderGrid()}</View>
         </View>
+
+        {/* Level indicator - minimal */}
+        <Text style={styles.levelText}>Level {level}</Text>
 
         {gameState === 'gameOver' && (
           <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
-            <Text style={styles.retryText}>TRY AGAIN</Text>
+            <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -231,53 +232,43 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#0D0D0D' },
-  container: { flex: 1, alignItems: 'center', paddingTop: 32 },
+  container: { flex: 1, alignItems: 'center', paddingTop: 20 },
   topBar: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 40,
   },
-  backText: { color: '#888888', fontSize: 15, fontWeight: '600' },
-  statusText: { color: '#00f0ff', fontSize: 20, fontWeight: '800', letterSpacing: 1 },
-  resetText: { color: '#888888', fontSize: 15, fontWeight: '600' },
+  topLeft: { flexDirection: 'row', alignItems: 'center' },
+  topRight: { flexDirection: 'row', alignItems: 'center' },
+  topIcon: { color: '#888888', fontSize: 26, fontWeight: '300' },
+  gridWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gridContainer: {
     backgroundColor: '#12121F',
-    padding: 18,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#222233',
+    padding: 16,
+    borderRadius: 20,
   },
   row: { flexDirection: 'row' },
   levelText: {
-    color: '#00f0ff',
-    fontSize: 26,
-    fontWeight: '800',
-    marginTop: 28,
+    color: '#666688',
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 32,
     letterSpacing: 1,
   },
-  livesSection: { marginTop: 18, alignItems: 'center' },
-  livesLabel: {
-    color: '#666688',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginBottom: 10,
-  },
-  livesContainer: { flexDirection: 'row', gap: 16 },
+  livesContainer: { flexDirection: 'row', gap: 10 },
   lifeDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2.5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
   retryButton: {
-    marginTop: 36,
+    marginTop: 40,
     backgroundColor: '#00f0ff',
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 32,
+    paddingHorizontal: 44,
+    paddingVertical: 14,
+    borderRadius: 28,
   },
-  retryText: { color: '#000000', fontSize: 18, fontWeight: '800' },
+  retryText: { color: '#000000', fontSize: 17, fontWeight: '700' },
 });
