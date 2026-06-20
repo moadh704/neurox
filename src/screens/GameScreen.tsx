@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Animated,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,15 +18,15 @@ type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const GRID_SIZE = 3;
-const TILE_SIZE = 90;
-const MAX_LIVES = 3;
+const TILE_SIZE = 98; // slightly larger
+type GameState = 'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver';
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 
 const getFlashTiming = (level: number) => {
-  if (level <= 5) return { flashDuration: 380, gap: 140 };
-  if (level <= 12) return { flashDuration: 260, gap: 90 };
-  return { flashDuration: 160, gap: 60 };
+  if (level <= 5) return { flashDuration: 360, gap: 130 };
+  if (level <= 12) return { flashDuration: 240, gap: 85 };
+  return { flashDuration: 150, gap: 55 };
 };
 
 export default function GameScreen() {
@@ -35,12 +36,16 @@ export default function GameScreen() {
 
   const [sequence, setSequence] = useState<number[]>([]);
   const [userInput, setUserInput] = useState<number[]>([]);
-  const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver'>('idle');
+  const [gameState, setGameState] = useState<GameState>('idle');
   const [activeTile, setActiveTile] = useState<number | null>(null);
   const [wrongTile, setWrongTile] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lives, setLives] = useState(MAX_LIVES);
+  const [lives, setLives] = useState(3);
+
+  // Animation values
+  const gridShake = useRef(new Animated.Value(0)).current;
+  const successPulse = useRef(new Animated.Value(1)).current;
 
   const addNewTileToSequence = useCallback(() => {
     const randomTile = Math.floor(Math.random() * 9);
@@ -81,8 +86,8 @@ export default function GameScreen() {
     }
     setSequence(newSeq);
     setLevel(currentLevel);
-    setLives(MAX_LIVES);
-    await new Promise(r => setTimeout(r, 200));
+    setLives(3);
+    await new Promise(r => setTimeout(r, 180));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
 
@@ -92,16 +97,35 @@ export default function GameScreen() {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
           const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 300);
+          setTimeout(() => startNewRound(startLevel), 280);
         } catch {
-          setTimeout(() => startNewRound(1), 300);
+          setTimeout(() => startNewRound(1), 280);
         }
       } else {
-        setTimeout(() => startNewRound(1), 300);
+        setTimeout(() => startNewRound(1), 280);
       }
     };
     init();
   }, []);
+
+  // Gentle shake animation for wrong tap
+  const triggerWrongFeedback = () => {
+    Animated.sequence([
+      Animated.timing(gridShake, { toValue: 8, duration: 60, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: -8, duration: 60, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: 6, duration: 50, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: -6, duration: 50, useNativeDriver: true }),
+      Animated.timing(gridShake, { toValue: 0, duration: 60, useNativeDriver: true }),
+    ]).start();
+  };
+
+  // Soft pulse on level complete
+  const triggerSuccessPulse = () => {
+    Animated.sequence([
+      Animated.timing(successPulse, { toValue: 1.08, duration: 120, useNativeDriver: true }),
+      Animated.timing(successPulse, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+  };
 
   const handleTilePress = useCallback((tileId: number) => {
     if (gameState !== 'playing' || isProcessing) return;
@@ -114,6 +138,7 @@ export default function GameScreen() {
     if (sequence[currentIndex] !== tileId) {
       setWrongTile(tileId);
       setIsProcessing(true);
+      triggerWrongFeedback();
 
       setTimeout(() => {
         setWrongTile(null);
@@ -123,16 +148,16 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 500);
+      }, 480);
       return;
     }
 
+    // Correct tap
     if (newInput.length === sequence.length) {
-      // Level Complete - wait for user to press Next
       setGameState('levelComplete');
       setIsProcessing(true);
+      triggerSuccessPulse();
 
-      // Save progress in Classic mode
       if (mode === 'classic') {
         AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1));
       }
@@ -154,16 +179,16 @@ export default function GameScreen() {
     setWrongTile(null);
     setLevel(1);
     setIsProcessing(false);
-    setLives(MAX_LIVES);
-    setTimeout(() => startNewRound(1), 200);
+    setLives(3);
+    setTimeout(() => startNewRound(1), 180);
   };
 
   const renderLives = () => {
     return (
       <View style={styles.livesContainer}>
-        {Array.from({ length: MAX_LIVES }).map((_, index) => (
-          <Text key={index} style={styles.heart}>
-            {index < lives ? '❤️' : '♡'}
+        {[1, 2, 3].map((i) => (
+          <Text key={i} style={styles.heart}>
+            {i <= lives ? '❤️' : '♡'}
           </Text>
         ))}
       </View>
@@ -197,29 +222,30 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top Bar */}
+        {/* Single Top Bar */}
         <View style={styles.topBar}>
-          <View style={styles.topLeft}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.topIcon}>←</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={resetGame} style={{ marginLeft: 16 }}>
-              <Text style={styles.topIcon}>↻</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.topIcon}>←</Text>
+          </TouchableOpacity>
 
-          <View style={styles.topRight}>
-            {renderLives()}
-          </View>
+          <Text style={styles.levelInBar}>LEVEL {level}</Text>
+
+          {renderLives()}
         </View>
 
-        <View style={styles.gridWrapper}>
-          <View style={styles.gridContainer}>{renderGrid()}</View>
-        </View>
+        {/* Game Board - moved up and larger */}
+        <Animated.View
+          style={[
+            styles.gridWrapper,
+            { transform: [{ translateX: gridShake }] }
+          ]}
+        >
+          <Animated.View style={[styles.gridContainer, { transform: [{ scale: successPulse }] }]}>
+            {renderGrid()}
+          </Animated.View>
+        </Animated.View>
 
-        <Text style={styles.levelText}>Level {level}</Text>
-
-        {/* Level Complete UI */}
+        {/* Level Complete */}
         {gameState === 'levelComplete' && (
           <View style={styles.levelCompleteContainer}>
             <Text style={styles.levelCompleteTitle}>Level Complete!</Text>
@@ -241,56 +267,46 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#0D0D0D' },
-  container: { flex: 1, alignItems: 'center', paddingTop: 20 },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 12, // reduced top space
+  },
   topBar: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 40,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
-  topLeft: { flexDirection: 'row', alignItems: 'center' },
-  topRight: { flexDirection: 'row', alignItems: 'center' },
   topIcon: { color: '#888888', fontSize: 26, fontWeight: '300' },
-  gridWrapper: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  gridContainer: {
-    backgroundColor: '#12121F',
-    padding: 16,
-    borderRadius: 20,
-  },
-  row: { flexDirection: 'row' },
-  levelText: {
-    color: '#666688',
-    fontSize: 15,
-    fontWeight: '600',
-    marginTop: 32,
+  levelInBar: {
+    color: '#00f0ff',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: 1,
   },
-  livesContainer: { flexDirection: 'row', gap: 6 },
+  livesContainer: { flexDirection: 'row', gap: 8 },
   heart: { fontSize: 22 },
-  levelCompleteContainer: {
-    marginTop: 30,
-    alignItems: 'center',
+
+  gridWrapper: {
+    marginTop: 8,
   },
-  levelCompleteTitle: {
-    color: '#00f0ff',
-    fontSize: 26,
-    fontWeight: '800',
-    marginBottom: 20,
+  gridContainer: {
+    backgroundColor: '#111122',
+    padding: 14, // reduced padding
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#222233',
   },
-  nextButton: {
-    backgroundColor: '#00f0ff',
-    paddingHorizontal: 50,
-    paddingVertical: 16,
-    borderRadius: 30,
-  },
+  row: { flexDirection: 'row' },
+
+  levelCompleteContainer: { marginTop: 24, alignItems: 'center' },
+  levelCompleteTitle: { color: '#00f0ff', fontSize: 26, fontWeight: '800', marginBottom: 18 },
+  nextButton: { backgroundColor: '#00f0ff', paddingHorizontal: 48, paddingVertical: 15, borderRadius: 30 },
   nextText: { color: '#000000', fontSize: 18, fontWeight: '700' },
-  retryButton: {
-    marginTop: 40,
-    backgroundColor: '#00f0ff',
-    paddingHorizontal: 44,
-    paddingVertical: 14,
-    borderRadius: 28,
-  },
+
+  retryButton: { marginTop: 32, backgroundColor: '#00f0ff', paddingHorizontal: 44, paddingVertical: 14, borderRadius: 28 },
   retryText: { color: '#000000', fontSize: 17, fontWeight: '700' },
 });
