@@ -152,6 +152,26 @@ export default function GameScreen() {
     setTimeout(() => startNewRound(1), 200);
   };
 
+  // Render lives as small glowing dots
+  const renderLives = () => {
+    return (
+      <View style={styles.livesContainer}>
+        {Array.from({ length: MAX_LIVES }).map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.lifeDot,
+              {
+                backgroundColor: index < lives ? COLORS.cyan : '#1a1a2e',
+                borderColor: index < lives ? COLORS.cyan : '#333355',
+              },
+            ]}
+          />
+        ))}
+      </View>
+    );
+  };
+
   const renderGrid = () => {
     const tiles = [];
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -193,8 +213,14 @@ export default function GameScreen() {
 
         <View style={styles.gridContainer}>{renderGrid()}</View>
 
+        {/* Level - bigger and cleaner */}
         <Text style={styles.levelText}>LEVEL {level}</Text>
-        <Text style={styles.livesText}>LIVES: {lives}</Text>
+
+        {/* Lives as glowing dots */}
+        <View style={styles.livesSection}>
+          <Text style={styles.livesLabel}>LIVES</Text>
+          {renderLives()}
+        </View>
 
         {gameState === 'gameOver' && (
           <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
@@ -213,7 +239,15 @@ const styles = StyleSheet.create({
   statusText: { color: '#00f0ff', fontSize: 18, fontWeight: 'bold' },
   gridContainer: { backgroundColor: '#111122', padding: 16, borderRadius: 20 },
   row: { flexDirection: 'row' },
-  levelText: { color: '#888', fontSize: 16, marginTop: 30 },
-  livesText: { color: '#888', fontSize: 16, marginTop: 8 },
+  levelText: { color: '#00f0ff', fontSize: 22, fontWeight: '800', marginTop: 24 },
+  livesSection: { marginTop: 20, alignItems: 'center' },
+  livesLabel: { color: '#666688', fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
+  livesContainer: { flexDirection: 'row', gap: 14 },
+  lifeDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+  },
   retryButton: { marginTop: 40, backgroundColor: '#00f0ff', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 30 },
 });
