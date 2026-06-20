@@ -35,7 +35,7 @@ export default function GameScreen() {
 
   const [sequence, setSequence] = useState<number[]>([]);
   const [userInput, setUserInput] = useState<number[]>([]);
-  const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'roundComplete' | 'gameOver'>('idle');
+  const [gameState, setGameState] = useState<'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver'>('idle');
   const [activeTile, setActiveTile] = useState<number | null>(null);
   const [wrongTile, setWrongTile] = useState<number | null>(null);
   const [level, setLevel] = useState(1);
@@ -128,17 +128,23 @@ export default function GameScreen() {
     }
 
     if (newInput.length === sequence.length) {
-      setGameState('roundComplete');
+      // Level Complete - wait for user to press Next
+      setGameState('levelComplete');
       setIsProcessing(true);
 
-      setTimeout(() => {
-        setUserInput([]);
-        setGameState('idle');
-        setIsProcessing(false);
-        startNewRound(level + 1);
-      }, 650);
+      // Save progress in Classic mode
+      if (mode === 'classic') {
+        AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1));
+      }
     }
-  }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, level]);
+  }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode]);
+
+  const goToNextLevel = () => {
+    setUserInput([]);
+    setGameState('idle');
+    setIsProcessing(false);
+    startNewRound(level + 1);
+  };
 
   const resetGame = () => {
     setSequence([]);
@@ -152,7 +158,6 @@ export default function GameScreen() {
     setTimeout(() => startNewRound(1), 200);
   };
 
-  // Hearts for lives - exactly like Arrows screenshot
   const renderLives = () => {
     return (
       <View style={styles.livesContainer}>
@@ -192,7 +197,7 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top Bar - very minimal like Arrows */}
+        {/* Top Bar */}
         <View style={styles.topBar}>
           <View style={styles.topLeft}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -203,19 +208,26 @@ export default function GameScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Hearts on the right - exactly like Arrows */}
           <View style={styles.topRight}>
             {renderLives()}
           </View>
         </View>
 
-        {/* Grid - centered and clean */}
         <View style={styles.gridWrapper}>
           <View style={styles.gridContainer}>{renderGrid()}</View>
         </View>
 
-        {/* Level indicator - minimal */}
         <Text style={styles.levelText}>Level {level}</Text>
+
+        {/* Level Complete UI */}
+        {gameState === 'levelComplete' && (
+          <View style={styles.levelCompleteContainer}>
+            <Text style={styles.levelCompleteTitle}>Level Complete!</Text>
+            <TouchableOpacity style={styles.nextButton} onPress={goToNextLevel}>
+              <Text style={styles.nextText}>Next Level</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {gameState === 'gameOver' && (
           <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
@@ -256,6 +268,23 @@ const styles = StyleSheet.create({
   },
   livesContainer: { flexDirection: 'row', gap: 6 },
   heart: { fontSize: 22 },
+  levelCompleteContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  levelCompleteTitle: {
+    color: '#00f0ff',
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 20,
+  },
+  nextButton: {
+    backgroundColor: '#00f0ff',
+    paddingHorizontal: 50,
+    paddingVertical: 16,
+    borderRadius: 30,
+  },
+  nextText: { color: '#000000', fontSize: 18, fontWeight: '700' },
   retryButton: {
     marginTop: 40,
     backgroundColor: '#00f0ff',
