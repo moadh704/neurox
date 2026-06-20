@@ -23,9 +23,9 @@ const MAX_LIVES = 3;
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 
 const getFlashTiming = (level: number) => {
-  if (level <= 5) return { flashDuration: 380, gap: 140 };
-  if (level <= 12) return { flashDuration: 260, gap: 90 };
-  return { flashDuration: 150, gap: 55 };
+  if (level <= 5) return { flashDuration: 360, gap: 130 };
+  if (level <= 12) return { flashDuration: 240, gap: 85 };
+  return { flashDuration: 140, gap: 50 };
 };
 
 export default function GameScreen() {
@@ -82,7 +82,7 @@ export default function GameScreen() {
     setSequence(newSeq);
     setLevel(currentLevel);
     setLives(MAX_LIVES);
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 180));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
 
@@ -92,12 +92,12 @@ export default function GameScreen() {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
           const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 300);
+          setTimeout(() => startNewRound(startLevel), 280);
         } catch {
-          setTimeout(() => startNewRound(1), 300);
+          setTimeout(() => startNewRound(1), 280);
         }
       } else {
-        setTimeout(() => startNewRound(1), 300);
+        setTimeout(() => startNewRound(1), 280);
       }
     };
     init();
@@ -123,7 +123,7 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 500);
+      }, 480);
       return;
     }
 
@@ -136,7 +136,7 @@ export default function GameScreen() {
         setGameState('idle');
         setIsProcessing(false);
         startNewRound(level + 1);
-      }, 650);
+      }, 620);
     }
   }, [gameState, isProcessing, userInput, sequence, startNewRound, loseLife, lives, level]);
 
@@ -149,10 +149,9 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(MAX_LIVES);
-    setTimeout(() => startNewRound(1), 200);
+    setTimeout(() => startNewRound(1), 180);
   };
 
-  // Render lives as small glowing dots
   const renderLives = () => {
     return (
       <View style={styles.livesContainer}>
@@ -162,8 +161,8 @@ export default function GameScreen() {
             style={[
               styles.lifeDot,
               {
-                backgroundColor: index < lives ? COLORS.cyan : '#1a1a2e',
-                borderColor: index < lives ? COLORS.cyan : '#333355',
+                backgroundColor: index < lives ? '#00f0ff' : '#1a1a2e',
+                borderColor: index < lives ? '#00f0ff' : '#333355',
               },
             ]}
           />
@@ -201,22 +200,20 @@ export default function GameScreen() {
       <View style={styles.container}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={{ color: '#888' }}>← HOME</Text>
+            <Text style={styles.backText}>← HOME</Text>
           </TouchableOpacity>
           <Text style={styles.statusText}>
             {gameState === 'gameOver' ? 'GAME OVER' : gameState.toUpperCase()}
           </Text>
           <TouchableOpacity onPress={resetGame}>
-            <Text style={{ color: '#888' }}>RESET</Text>
+            <Text style={styles.resetText}>RESET</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.gridContainer}>{renderGrid()}</View>
 
-        {/* Level - bigger and cleaner */}
         <Text style={styles.levelText}>LEVEL {level}</Text>
 
-        {/* Lives as glowing dots */}
         <View style={styles.livesSection}>
           <Text style={styles.livesLabel}>LIVES</Text>
           {renderLives()}
@@ -224,7 +221,7 @@ export default function GameScreen() {
 
         {gameState === 'gameOver' && (
           <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
-            <Text style={{ color: 'white', fontSize: 18 }}>TRY AGAIN</Text>
+            <Text style={styles.retryText}>TRY AGAIN</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -233,21 +230,54 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#0a0a14' },
-  container: { flex: 1, alignItems: 'center', paddingTop: 40 },
-  topBar: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 30 },
-  statusText: { color: '#00f0ff', fontSize: 18, fontWeight: 'bold' },
-  gridContainer: { backgroundColor: '#111122', padding: 16, borderRadius: 20 },
-  row: { flexDirection: 'row' },
-  levelText: { color: '#00f0ff', fontSize: 22, fontWeight: '800', marginTop: 24 },
-  livesSection: { marginTop: 20, alignItems: 'center' },
-  livesLabel: { color: '#666688', fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
-  livesContainer: { flexDirection: 'row', gap: 14 },
-  lifeDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
+  safeArea: { flex: 1, backgroundColor: '#0D0D0D' },
+  container: { flex: 1, alignItems: 'center', paddingTop: 32 },
+  topBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
-  retryButton: { marginTop: 40, backgroundColor: '#00f0ff', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 30 },
+  backText: { color: '#888888', fontSize: 15, fontWeight: '600' },
+  statusText: { color: '#00f0ff', fontSize: 20, fontWeight: '800', letterSpacing: 1 },
+  resetText: { color: '#888888', fontSize: 15, fontWeight: '600' },
+  gridContainer: {
+    backgroundColor: '#12121F',
+    padding: 18,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#222233',
+  },
+  row: { flexDirection: 'row' },
+  levelText: {
+    color: '#00f0ff',
+    fontSize: 26,
+    fontWeight: '800',
+    marginTop: 28,
+    letterSpacing: 1,
+  },
+  livesSection: { marginTop: 18, alignItems: 'center' },
+  livesLabel: {
+    color: '#666688',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 10,
+  },
+  livesContainer: { flexDirection: 'row', gap: 16 },
+  lifeDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2.5,
+  },
+  retryButton: {
+    marginTop: 36,
+    backgroundColor: '#00f0ff',
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 32,
+  },
+  retryText: { color: '#000000', fontSize: 18, fontWeight: '800' },
 });
