@@ -152,17 +152,14 @@ export default function GameScreen() {
     setTimeout(() => startNewRound(1), 200);
   };
 
+  // Hearts for lives - exactly like Arrows screenshot
   const renderLives = () => {
     return (
       <View style={styles.livesContainer}>
         {Array.from({ length: MAX_LIVES }).map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.lifeDot,
-              { backgroundColor: index < lives ? '#00f0ff' : '#222233' }
-            ]}
-          />
+          <Text key={index} style={styles.heart}>
+            {index < lives ? '❤️' : '♡'}
+          </Text>
         ))}
       </View>
     );
@@ -206,7 +203,7 @@ export default function GameScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Lives on the right */}
+          {/* Hearts on the right - exactly like Arrows */}
           <View style={styles.topRight}>
             {renderLives()}
           </View>
@@ -257,12 +254,8 @@ const styles = StyleSheet.create({
     marginTop: 32,
     letterSpacing: 1,
   },
-  livesContainer: { flexDirection: 'row', gap: 10 },
-  lifeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
+  livesContainer: { flexDirection: 'row', gap: 6 },
+  heart: { fontSize: 22 },
   retryButton: {
     marginTop: 40,
     backgroundColor: '#00f0ff',
