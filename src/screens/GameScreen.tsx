@@ -244,7 +244,7 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Tighter top bar - positioned lower */}
+        {/* Balanced top bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={26} color="#888888" />
@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 4,     // lower position
-    paddingBottom: 4,
+    paddingTop: 10,   // balanced position
+    paddingBottom: 6,
   },
   levelInBar: { color: '#00f0ff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
   livesContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
