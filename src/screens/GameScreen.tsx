@@ -244,7 +244,7 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Tighter top bar */}
+        {/* Responsive top bar */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={26} color="#888888" />
@@ -255,6 +255,7 @@ export default function GameScreen() {
           {renderLives()}
         </View>
 
+        {/* Flexible centered content */}
         <View style={styles.content}>
           <Animated.View style={[styles.gridWrapper, { transform: [{ translateX: gridShake }] }]}>
             <Animated.View style={[styles.gridContainer, { transform: [{ scale: successPulse }] }]}>
@@ -290,8 +291,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 8,      // reduced
-    paddingBottom: 6,   // reduced
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   levelInBar: { color: '#00f0ff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
   livesContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
@@ -300,9 +301,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 30,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  gridWrapper: { marginBottom: 20 },
+  gridWrapper: { marginBottom: 16 },
   gridContainer: {
     backgroundColor: '#111122',
     padding: 12,
@@ -312,11 +314,11 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row' },
 
-  levelCompleteContainer: { alignItems: 'center', marginTop: 8 },
-  levelCompleteTitle: { color: '#00f0ff', fontSize: 23, fontWeight: '800', marginBottom: 14 },
-  nextButton: { backgroundColor: '#00f0ff', paddingHorizontal: 44, paddingVertical: 13, borderRadius: 26 },
+  levelCompleteContainer: { alignItems: 'center', marginTop: 6 },
+  levelCompleteTitle: { color: '#00f0ff', fontSize: 22, fontWeight: '800', marginBottom: 12 },
+  nextButton: { backgroundColor: '#00f0ff', paddingHorizontal: 42, paddingVertical: 12, borderRadius: 24 },
   nextText: { color: '#000000', fontSize: 16, fontWeight: '700' },
 
-  retryButton: { marginTop: 16, backgroundColor: '#00f0ff', paddingHorizontal: 40, paddingVertical: 12, borderRadius: 24 },
+  retryButton: { marginTop: 12, backgroundColor: '#00f0ff', paddingHorizontal: 38, paddingVertical: 11, borderRadius: 22 },
   retryText: { color: '#000000', fontSize: 15, fontWeight: '700' },
 });
