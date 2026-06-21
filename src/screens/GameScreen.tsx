@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 6,      // lower position
-    paddingBottom: 4,
+    paddingTop: 8,      // balanced & visible
+    paddingBottom: 5,
   },
   levelInBar: { color: '#00f0ff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
   livesContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
