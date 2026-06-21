@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -60,7 +61,7 @@ export default function HomeScreen() {
 
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem} onPress={() => {}}>
-            <Text style={styles.navIcon}>🏠</Text>
+            <Ionicons name="home" size={22} color="#00f0ff" />
             <Text style={styles.navLabelActive}>Home</Text>
           </TouchableOpacity>
 
@@ -68,7 +69,7 @@ export default function HomeScreen() {
             style={styles.navItem}
             onPress={() => navigation.navigate('Levels')}
           >
-            <Text style={styles.navIcon}>🔒</Text>
+            <Ionicons name="list" size={22} color="#888888" />
             <Text style={styles.navLabel}>Levels</Text>
           </TouchableOpacity>
 
@@ -76,7 +77,7 @@ export default function HomeScreen() {
             style={styles.navItem}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Text style={styles.navIcon}>⚙️</Text>
+            <Ionicons name="settings-outline" size={22} color="#888888" />
             <Text style={styles.navLabel}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -139,7 +140,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#222233',
   },
   navItem: { alignItems: 'center' },
-  navIcon: { fontSize: 22, marginBottom: 3 },
   navLabel: { color: '#888888', fontSize: 12, fontWeight: '600' },
   navLabelActive: { color: '#00f0ff', fontSize: 12, fontWeight: '700' },
 });
