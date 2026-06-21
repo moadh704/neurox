@@ -244,7 +244,7 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Responsive top bar */}
+        {/* Tighter top bar - positioned lower */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={26} color="#888888" />
@@ -255,7 +255,6 @@ export default function GameScreen() {
           {renderLives()}
         </View>
 
-        {/* Flexible centered content */}
         <View style={styles.content}>
           <Animated.View style={[styles.gridWrapper, { transform: [{ translateX: gridShake }] }]}>
             <Animated.View style={[styles.gridContainer, { transform: [{ scale: successPulse }] }]}>
@@ -291,7 +290,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingTop: 4,     // lower position
     paddingBottom: 4,
   },
   levelInBar: { color: '#00f0ff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
