@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
-  interpolateColor,
 } from 'react-native-reanimated';
 import { COLORS } from '../constants/colors';
 
@@ -33,24 +32,21 @@ export default function Tile({
   ghostMode = false,
 }: TileProps) {
   const scale = useSharedValue(1);
-  const glow = useSharedValue(0);
 
   React.useEffect(() => {
     if (isActive) {
-      glow.value = withTiming(1, { duration: 120 });
-      scale.value = withSpring(1.08, { damping: 12, stiffness: 180 });
+      scale.value = withSpring(1.06, { damping: 14, stiffness: 200 });
     } else {
-      glow.value = withTiming(0, { duration: 180 });
-      scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+      scale.value = withSpring(1, { damping: 16, stiffness: 220 });
     }
   }, [isActive]);
 
   React.useEffect(() => {
     if (isWrong) {
-      scale.value = withTiming(0.92, { duration: 80 });
+      scale.value = withTiming(0.9, { duration: 70 });
       setTimeout(() => {
         scale.value = withSpring(1, { damping: 12 });
-      }, 180);
+      }, 160);
     }
   }, [isWrong]);
 
@@ -63,13 +59,13 @@ export default function Tile({
           ? COLORS.tileIdle
           : COLORS.tileIdle;
 
-    // Neutral calm glow for ALL idle tiles. Color only appears when active.
+    // Much calmer idle glow
     const effectiveShadowColor = (isActive || isWrong)
       ? (isWrong ? '#FF3366' : color)
-      : '#A8B8D0'; // single neutral glow color for idle state
+      : '#6B7280';
 
-    const shadowOpacity = isActive || isWrong ? 0.85 : 0.18;
-    const shadowRadius = isActive || isWrong ? 16 : 5;
+    const shadowOpacity = isActive || isWrong ? 0.7 : 0.08;
+    const shadowRadius = isActive || isWrong ? 14 : 3;
 
     return {
       transform: [{ scale: scale.value }],
@@ -82,10 +78,10 @@ export default function Tile({
 
   const handlePress = () => {
     if (!disabled) {
-      scale.value = withSpring(0.92, { damping: 20, stiffness: 400 });
+      scale.value = withSpring(0.9, { damping: 18, stiffness: 380 });
       setTimeout(() => {
-        scale.value = withSpring(1, { damping: 15, stiffness: 250 });
-      }, 80);
+        scale.value = withSpring(1, { damping: 15, stiffness: 240 });
+      }, 70);
       onPress(id);
     }
   };
@@ -100,7 +96,7 @@ export default function Tile({
         {
           width: size,
           height: size,
-          borderColor: isActive || isWrong ? color : '#333355',
+          borderColor: isActive || isWrong ? color : '#2A2A3D',
         },
         animatedStyle,
       ]}
@@ -112,19 +108,19 @@ export default function Tile({
 
 const styles = StyleSheet.create({
   tile: {
-    borderRadius: 18,
-    borderWidth: 2.5,
+    borderRadius: 16,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 6,
+    margin: 5,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
+    elevation: 6,
   },
   innerGlow: {
     position: 'absolute',
-    width: '68%',
-    height: '68%',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: '65%',
+    height: '65%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
 });
