@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -47,7 +48,7 @@ export default function LevelsScreen() {
         </Text>
       );
     } else {
-      content = <Text style={styles.lockIcon}>🔒</Text>;
+      content = <Ionicons name="lock-closed" size={20} color="#555577" />;
     }
 
     return (
@@ -133,9 +134,6 @@ const styles = StyleSheet.create({
   currentText: {
     color: '#000000',
     fontWeight: '800',
-  },
-  lockIcon: {
-    fontSize: 22,
   },
   backButton: {
     marginTop: 30,
