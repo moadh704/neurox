@@ -259,8 +259,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 10,
+    paddingTop:30,
+    paddingBottom:20,
   },
   backButton: { padding: 8 },
   headerCenter: { alignItems: 'center' },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   lifeDot: { width: 10, height: 10, borderRadius: 5 },
 
   gridContainer: {
-    marginTop: 8,
+    marginTop: 2,
     alignItems: 'center',
   },
   row: { flexDirection: 'row', marginBottom: TILE_GAP },
