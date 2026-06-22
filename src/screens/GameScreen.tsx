@@ -206,21 +206,24 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
-          </TouchableOpacity>
+        {/* Single container to move header + grid together */}
+        <View style={styles.mainContent}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
 
-          <View style={styles.headerCenter}>
-            <Text style={styles.levelText}>Level {level}</Text>
-            {renderLives()}
+            <View style={styles.headerCenter}>
+              <Text style={styles.levelText}>Level {level}</Text>
+              {renderLives()}
+            </View>
+
+            <View style={{ width: 40 }} />
           </View>
 
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.gridContainer}>
-          {renderGrid()}
+          <View style={styles.gridContainer}>
+            {renderGrid()}
+          </View>
         </View>
 
         <Modal
@@ -253,23 +256,30 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#0D0D0D' },
   container: { flex: 1, alignItems: 'center' },
 
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 10,        // ← change this one number to move everything up/down
+  },
+
   header: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop:30,
-    paddingBottom:20,
+    paddingTop: 2,
+    paddingBottom: 6,
   },
   backButton: { padding: 8 },
   headerCenter: { alignItems: 'center' },
-  levelText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  levelText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 6 },
   livesContainer: { flexDirection: 'row', gap: 10 },
   lifeDot: { width: 10, height: 10, borderRadius: 5 },
 
   gridContainer: {
-    marginTop: 2,
+    marginTop: 4,
     alignItems: 'center',
   },
   row: { flexDirection: 'row', marginBottom: TILE_GAP },
