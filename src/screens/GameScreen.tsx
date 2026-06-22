@@ -207,12 +207,10 @@ export default function GameScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.mainContent}>
-          {/* Back button above everything */}
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonTop}>
-            <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Centered header */}
           <View style={styles.header}>
             <Text style={styles.levelText}>Level {level}</Text>
             {renderLives()}
@@ -262,8 +260,8 @@ const styles = StyleSheet.create({
 
   backButtonTop: {
     position: 'absolute',
-    top: 12,
-    left: 20,
+    top: 14,
+    left: 16,
     zIndex: 10,
   },
 
