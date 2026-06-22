@@ -40,6 +40,7 @@ export default function GameScreen() {
   const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [correctTapFeedback, setCorrectTapFeedback] = useState<number | null>(null);
+  const [waveTile, setWaveTile] = useState<number | null>(null);
 
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
   const [countdown, setCountdown] = useState(0);
@@ -65,6 +66,17 @@ export default function GameScreen() {
     setGameState('playing');
   }, []);
 
+  const playWaveCelebration = useCallback(async () => {
+    const waveOrder: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    const stepTime = 72; // ~650ms total for smooth fast wave sweep
+
+    for (let i = 0; i < waveOrder.length; i++) {
+      setWaveTile(waveOrder[i]);
+      await new Promise(resolve => setTimeout(resolve, stepTime));
+    }
+    setWaveTile(null);
+  }, []);
+
   const loseLife = useCallback(() => {
     const newLives = lives - 1;
     setLives(newLives);
@@ -87,6 +99,7 @@ export default function GameScreen() {
     setShowLevelCompleteModal(false);
     setShowGameOverModal(false);
     setCountdown(0);
+    setWaveTile(null);
     if (autoAdvanceTimer.current) {
       clearTimeout(autoAdvanceTimer.current);
     }
@@ -165,15 +178,20 @@ export default function GameScreen() {
       setIsProcessing(true);
 
       if (mode === 'classic') {
-        AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1));
+        AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1)).catch(() => {});
       }
 
+      // Play fast grid wave celebration (~650ms), then show Level Complete popup
       setTimeout(() => {
-        setShowLevelCompleteModal(true);
-        startAutoAdvanceCountdown();
-      }, 180);
+        playWaveCelebration().then(() => {
+          setTimeout(() => {
+            setShowLevelCompleteModal(true);
+            startAutoAdvanceCountdown();
+          }, 60);
+        });
+      }, 130);
     }
-  }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode]);
+  }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode, playWaveCelebration]);
 
   const startAutoAdvanceCountdown = () => {
     setCountdown(2);
@@ -201,6 +219,7 @@ export default function GameScreen() {
     setGameState('idle');
     setIsProcessing(false);
     setCountdown(0);
+    setWaveTile(null);
     startNewRound(level + 1);
   };
 
@@ -219,6 +238,7 @@ export default function GameScreen() {
     setShowLevelCompleteModal(false);
     setShowGameOverModal(false);
     setCountdown(0);
+    setWaveTile(null);
     setTimeout(() => startNewRound(1), 200);
   };
 
@@ -247,10 +267,11 @@ export default function GameScreen() {
         const isActive = activeTile === id;
         const isWrong = wrongTile === id;
         const isCorrectFeedback = correctTapFeedback === id;
+        const isWave = waveTile === id;
 
         let tileColor = '#E8E8E8';
         if (isWrong) tileColor = '#E25C5C';
-        else if (isActive) tileColor = '#5B7FE0';
+        else if (isActive || isWave) tileColor = '#5B7FE0';
         else if (isCorrectFeedback) tileColor = '#7BA3F0';
 
         rowTiles.push(
