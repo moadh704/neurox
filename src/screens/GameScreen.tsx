@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Modal,
+  Animated,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,6 +39,10 @@ export default function GameScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(3);
   const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
+  const [correctTapFeedback, setCorrectTapFeedback] = useState<number | null>(null);
+
+  const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
+  const [countdown, setCountdown] = useState(0);
 
   const addNewTileToSequence = useCallback(() => {
     const randomTile = Math.floor(Math.random() * 9);
@@ -79,6 +84,10 @@ export default function GameScreen() {
     setLevel(currentLevel);
     setLives(3);
     setShowLevelCompleteModal(false);
+    setCountdown(0);
+    if (autoAdvanceTimer.current) {
+      clearTimeout(autoAdvanceTimer.current);
+    }
     await new Promise(r => setTimeout(r, 200));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
@@ -99,6 +108,13 @@ export default function GameScreen() {
     };
     init();
   }, []);
+
+  const triggerCorrectTapFeedback = (tileId: number) => {
+    setCorrectTapFeedback(tileId);
+    setTimeout(() => {
+      setCorrectTapFeedback(null);
+    }, 120);
+  };
 
   const handleTilePress = useCallback((tileId: number) => {
     if (gameState !== 'playing' || isProcessing) return;
@@ -124,6 +140,9 @@ export default function GameScreen() {
       return;
     }
 
+    // Good tap feedback
+    triggerCorrectTapFeedback(tileId);
+
     if (newInput.length === sequence.length) {
       setGameState('levelComplete');
       setIsProcessing(true);
@@ -134,19 +153,44 @@ export default function GameScreen() {
 
       setTimeout(() => {
         setShowLevelCompleteModal(true);
+        startAutoAdvanceCountdown();
       }, 180);
     }
   }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode]);
 
+  const startAutoAdvanceCountdown = () => {
+    setCountdown(2);
+
+    if (autoAdvanceTimer.current) clearInterval(autoAdvanceTimer.current);
+
+    autoAdvanceTimer.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (autoAdvanceTimer.current) clearInterval(autoAdvanceTimer.current);
+          goToNextLevel();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const goToNextLevel = () => {
+    if (autoAdvanceTimer.current) {
+      clearInterval(autoAdvanceTimer.current);
+    }
     setShowLevelCompleteModal(false);
     setUserInput([]);
     setGameState('idle');
     setIsProcessing(false);
+    setCountdown(0);
     startNewRound(level + 1);
   };
 
   const resetGame = () => {
+    if (autoAdvanceTimer.current) {
+      clearInterval(autoAdvanceTimer.current);
+    }
     setSequence([]);
     setUserInput([]);
     setGameState('idle');
@@ -156,6 +200,7 @@ export default function GameScreen() {
     setIsProcessing(false);
     setLives(3);
     setShowLevelCompleteModal(false);
+    setCountdown(0);
     setTimeout(() => startNewRound(1), 200);
   };
 
@@ -183,10 +228,12 @@ export default function GameScreen() {
         const id = row * GRID_SIZE + col;
         const isActive = activeTile === id;
         const isWrong = wrongTile === id;
+        const isCorrectFeedback = correctTapFeedback === id;
 
         let tileColor = '#E8E8E8';
         if (isWrong) tileColor = '#E25C5C';
         else if (isActive) tileColor = '#5B7FE0';
+        else if (isCorrectFeedback) tileColor = '#7BA3F0'; // slightly brighter on correct tap
 
         rowTiles.push(
           <TouchableOpacity
@@ -203,6 +250,8 @@ export default function GameScreen() {
     return tiles;
   };
 
+  const progressText = `${userInput.length} / ${sequence.length}`;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -215,6 +264,11 @@ export default function GameScreen() {
             <Text style={styles.levelText}>Level {level}</Text>
             {renderLives()}
           </View>
+
+          {/* Progress indicator */}
+          {gameState === 'playing' && sequence.length > 0 && (
+            <Text style={styles.progressText}>{progressText}</Text>
+          )}
 
           <View style={styles.gridContainer}>
             {renderGrid()}
@@ -231,7 +285,9 @@ export default function GameScreen() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Level {level} ✓</Text>
               <TouchableOpacity style={styles.nextButton} onPress={goToNextLevel}>
-                <Text style={styles.nextButtonText}>Next Level</Text>
+                <Text style={styles.nextButtonText}>
+                  Next Level {countdown > 0 ? `(${countdown})` : ''}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -267,11 +323,18 @@ const styles = StyleSheet.create({
 
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   levelText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 6 },
   livesContainer: { flexDirection: 'row', gap: 10 },
   lifeDot: { width: 10, height: 10, borderRadius: 5 },
+
+  progressText: {
+    color: '#888888',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
 
   gridContainer: {
     alignItems: 'center',
