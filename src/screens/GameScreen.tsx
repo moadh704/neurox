@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Modal,
-  Animated,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -39,6 +38,7 @@ export default function GameScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(3);
   const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [correctTapFeedback, setCorrectTapFeedback] = useState<number | null>(null);
 
   const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -71,6 +71,7 @@ export default function GameScreen() {
     if (newLives <= 0) {
       setGameState('gameOver');
       setIsProcessing(true);
+      setShowGameOverModal(true);
     }
   }, [lives]);
 
@@ -84,6 +85,7 @@ export default function GameScreen() {
     setLevel(currentLevel);
     setLives(3);
     setShowLevelCompleteModal(false);
+    setShowGameOverModal(false);
     setCountdown(0);
     if (autoAdvanceTimer.current) {
       clearTimeout(autoAdvanceTimer.current);
@@ -116,6 +118,22 @@ export default function GameScreen() {
     }, 120);
   };
 
+  const replaySequence = async () => {
+    if (isProcessing || gameState !== 'playing') return;
+
+    setIsProcessing(true);
+    const currentInput = [...userInput];
+
+    for (let i = 0; i < sequence.length; i++) {
+      setActiveTile(sequence[i]);
+      await new Promise(r => setTimeout(r, 380));
+      setActiveTile(null);
+      if (i < sequence.length - 1) await new Promise(r => setTimeout(r, 120));
+    }
+    setActiveTile(null);
+    setIsProcessing(false);
+  };
+
   const handleTilePress = useCallback((tileId: number) => {
     if (gameState !== 'playing' || isProcessing) return;
 
@@ -140,7 +158,6 @@ export default function GameScreen() {
       return;
     }
 
-    // Good tap feedback
     triggerCorrectTapFeedback(tileId);
 
     if (newInput.length === sequence.length) {
@@ -200,6 +217,7 @@ export default function GameScreen() {
     setIsProcessing(false);
     setLives(3);
     setShowLevelCompleteModal(false);
+    setShowGameOverModal(false);
     setCountdown(0);
     setTimeout(() => startNewRound(1), 200);
   };
@@ -233,7 +251,7 @@ export default function GameScreen() {
         let tileColor = '#E8E8E8';
         if (isWrong) tileColor = '#E25C5C';
         else if (isActive) tileColor = '#5B7FE0';
-        else if (isCorrectFeedback) tileColor = '#7BA3F0'; // slightly brighter on correct tap
+        else if (isCorrectFeedback) tileColor = '#7BA3F0';
 
         rowTiles.push(
           <TouchableOpacity
@@ -265,9 +283,14 @@ export default function GameScreen() {
             {renderLives()}
           </View>
 
-          {/* Progress indicator */}
           {gameState === 'playing' && sequence.length > 0 && (
-            <Text style={styles.progressText}>{progressText}</Text>
+            <View style={styles.topControls}>
+              <Text style={styles.progressText}>{progressText}</Text>
+
+              <TouchableOpacity onPress={replaySequence} style={styles.replayButton}>
+                <Ionicons name="eye-outline" size={22} color="#888888" />
+              </TouchableOpacity>
+            </View>
           )}
 
           <View style={styles.gridContainer}>
@@ -275,6 +298,7 @@ export default function GameScreen() {
           </View>
         </View>
 
+        {/* Level Complete Modal */}
         <Modal
           visible={showLevelCompleteModal}
           transparent={true}
@@ -293,11 +317,22 @@ export default function GameScreen() {
           </View>
         </Modal>
 
-        {gameState === 'gameOver' && (
-          <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
-            <Text style={styles.retryText}>Try Again</Text>
-          </TouchableOpacity>
-        )}
+        {/* Game Over Modal */}
+        <Modal
+          visible={showGameOverModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={resetGame}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Game Over</Text>
+              <TouchableOpacity style={styles.retryButtonModal} onPress={resetGame}>
+                <Text style={styles.retryTextModal}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -323,17 +358,25 @@ const styles = StyleSheet.create({
 
   header: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   levelText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 6 },
   livesContainer: { flexDirection: 'row', gap: 10 },
   lifeDot: { width: 10, height: 10, borderRadius: 5 },
 
+  topControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
   progressText: {
     color: '#888888',
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 16,
+  },
+  replayButton: {
+    padding: 6,
   },
 
   gridContainer: {
@@ -371,12 +414,11 @@ const styles = StyleSheet.create({
   },
   nextButtonText: { color: '#5B7FE0', fontSize: 16, fontWeight: '600' },
 
-  retryButton: {
-    marginTop: 30,
+  retryButtonModal: {
     backgroundColor: '#5B7FE0',
     paddingHorizontal: 36,
     paddingVertical: 12,
     borderRadius: 24,
   },
-  retryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  retryTextModal: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
