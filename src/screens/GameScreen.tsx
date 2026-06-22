@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Animated,
+  Modal,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { COLORS, TILE_COLORS } from '../constants/colors';
-import Tile from '../components/Tile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,16 +17,12 @@ type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const GRID_SIZE = 3;
-const TILE_SIZE = 96;
+const TILE_SIZE = 78;
+const TILE_GAP = 14;
+
 type GameState = 'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver';
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
-
-const getFlashTiming = (level: number) => {
-  if (level <= 5) return { flashDuration: 350, gap: 120 };
-  if (level <= 12) return { flashDuration: 230, gap: 80 };
-  return { flashDuration: 145, gap: 50 };
-};
 
 export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
@@ -43,10 +37,7 @@ export default function GameScreen() {
   const [level, setLevel] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lives, setLives] = useState(3);
-  const [showLevelCompleteUI, setShowLevelCompleteUI] = useState(false);
-
-  const gridShake = useRef(new Animated.Value(0)).current;
-  const successPulse = useRef(new Animated.Value(1)).current;
+  const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
 
   const addNewTileToSequence = useCallback(() => {
     const randomTile = Math.floor(Math.random() * 9);
@@ -54,16 +45,15 @@ export default function GameScreen() {
   }, []);
 
   const playSequence = useCallback(async (seq: number[], currentLevel: number) => {
-    const { flashDuration, gap } = getFlashTiming(currentLevel);
     setGameState('watching');
     setIsProcessing(true);
     setUserInput([]);
 
     for (let i = 0; i < seq.length; i++) {
       setActiveTile(seq[i]);
-      await new Promise(r => setTimeout(r, flashDuration));
+      await new Promise(r => setTimeout(r, 380));
       setActiveTile(null);
-      if (i < seq.length - 1) await new Promise(r => setTimeout(r, gap));
+      if (i < seq.length - 1) await new Promise(r => setTimeout(r, 120));
     }
     setActiveTile(null);
     setIsProcessing(false);
@@ -88,8 +78,8 @@ export default function GameScreen() {
     setSequence(newSeq);
     setLevel(currentLevel);
     setLives(3);
-    setShowLevelCompleteUI(false);
-    await new Promise(r => setTimeout(r, 160));
+    setShowLevelCompleteModal(false);
+    await new Promise(r => setTimeout(r, 200));
     await playSequence(newSeq, currentLevel);
   }, [level, playSequence]);
 
@@ -99,50 +89,16 @@ export default function GameScreen() {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
           const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 260);
+          setTimeout(() => startNewRound(startLevel), 300);
         } catch {
-          setTimeout(() => startNewRound(1), 260);
+          setTimeout(() => startNewRound(1), 300);
         }
       } else {
-        setTimeout(() => startNewRound(1), 260);
+        setTimeout(() => startNewRound(1), 300);
       }
     };
     init();
   }, []);
-
-  const playLevelCompleteWave = async () => {
-    setShowLevelCompleteUI(false);
-
-    const waveOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-
-    for (let i = 0; i < waveOrder.length; i++) {
-      setActiveTile(waveOrder[i]);
-      await new Promise(r => setTimeout(r, 70));
-    }
-
-    setActiveTile(null);
-
-    setTimeout(() => {
-      setShowLevelCompleteUI(true);
-    }, 150);
-  };
-
-  const triggerWrongFeedback = () => {
-    Animated.sequence([
-      Animated.timing(gridShake, { toValue: 10, duration: 50, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: -10, duration: 50, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: 8, duration: 45, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: -8, duration: 45, useNativeDriver: true }),
-      Animated.timing(gridShake, { toValue: 0, duration: 60, useNativeDriver: true }),
-    ]).start();
-  };
-
-  const triggerSuccessPulse = () => {
-    Animated.sequence([
-      Animated.timing(successPulse, { toValue: 1.12, duration: 90, useNativeDriver: true }),
-      Animated.timing(successPulse, { toValue: 1, duration: 220, useNativeDriver: true }),
-    ]).start();
-  };
 
   const handleTilePress = useCallback((tileId: number) => {
     if (gameState !== 'playing' || isProcessing) return;
@@ -155,7 +111,6 @@ export default function GameScreen() {
     if (sequence[currentIndex] !== tileId) {
       setWrongTile(tileId);
       setIsProcessing(true);
-      triggerWrongFeedback();
 
       setTimeout(() => {
         setWrongTile(null);
@@ -165,27 +120,29 @@ export default function GameScreen() {
           setGameState('playing');
           setIsProcessing(false);
         }
-      }, 420);
+      }, 450);
       return;
     }
 
     if (newInput.length === sequence.length) {
       setGameState('levelComplete');
       setIsProcessing(true);
-      triggerSuccessPulse();
-      playLevelCompleteWave();
 
       if (mode === 'classic') {
         AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1));
       }
+
+      setTimeout(() => {
+        setShowLevelCompleteModal(true);
+      }, 180);
     }
   }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode]);
 
   const goToNextLevel = () => {
+    setShowLevelCompleteModal(false);
     setUserInput([]);
     setGameState('idle');
     setIsProcessing(false);
-    setShowLevelCompleteUI(false);
     startNewRound(level + 1);
   };
 
@@ -198,19 +155,20 @@ export default function GameScreen() {
     setLevel(1);
     setIsProcessing(false);
     setLives(3);
-    setShowLevelCompleteUI(false);
-    setTimeout(() => startNewRound(1), 160);
+    setShowLevelCompleteModal(false);
+    setTimeout(() => startNewRound(1), 200);
   };
 
   const renderLives = () => {
     return (
       <View style={styles.livesContainer}>
         {[1, 2, 3].map((i) => (
-          <Ionicons
+          <View
             key={i}
-            name={i <= lives ? 'heart' : 'heart-outline'}
-            size={22}
-            color={i <= lives ? '#FF3B5C' : '#555577'}
+            style={[
+              styles.lifeDot,
+              { backgroundColor: i <= lives ? '#FFFFFF' : '#555555' }
+            ]}
           />
         ))}
       </View>
@@ -223,16 +181,20 @@ export default function GameScreen() {
       const rowTiles = [];
       for (let col = 0; col < GRID_SIZE; col++) {
         const id = row * GRID_SIZE + col;
+        const isActive = activeTile === id;
+        const isWrong = wrongTile === id;
+
+        let tileColor = '#E8E8E8';
+        if (isWrong) tileColor = '#E25C5C';
+        else if (isActive) tileColor = '#5B7FE0';
+
         rowTiles.push(
-          <Tile
+          <TouchableOpacity
             key={id}
-            id={id}
-            color={TILE_COLORS[id]}
-            isActive={activeTile === id}
-            isWrong={wrongTile === id}
+            style={[styles.tile, { backgroundColor: tileColor }]}
+            onPress={() => handleTilePress(id)}
             disabled={gameState !== 'playing' || isProcessing || gameState === 'gameOver'}
-            onPress={handleTilePress}
-            size={TILE_SIZE}
+            activeOpacity={0.7}
           />
         );
       }
@@ -244,38 +206,44 @@ export default function GameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={26} color="#888888" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <Text style={styles.levelInBar}>LEVEL {level}</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.levelText}>Level {level}</Text>
+            {renderLives()}
+          </View>
 
-          {renderLives()}
+          <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.content}>
-          <Animated.View style={[styles.gridWrapper, { transform: [{ translateX: gridShake }] }]}>
-            <Animated.View style={[styles.gridContainer, { transform: [{ scale: successPulse }] }]}>
-              {renderGrid()}
-            </Animated.View>
-          </Animated.View>
+        <View style={styles.gridContainer}>
+          {renderGrid()}
+        </View>
 
-          {gameState === 'levelComplete' && showLevelCompleteUI && (
-            <View style={styles.levelCompleteContainer}>
-              <Text style={styles.levelCompleteTitle}>Level Complete!</Text>
+        <Modal
+          visible={showLevelCompleteModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={goToNextLevel}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Level {level} ✓</Text>
               <TouchableOpacity style={styles.nextButton} onPress={goToNextLevel}>
-                <Text style={styles.nextText}>Next Level</Text>
+                <Text style={styles.nextButtonText}>Next Level</Text>
               </TouchableOpacity>
             </View>
-          )}
+          </View>
+        </Modal>
 
-          {gameState === 'gameOver' && (
-            <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
-              <Text style={styles.retryText}>Try Again</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {gameState === 'gameOver' && (
+          <TouchableOpacity style={styles.retryButton} onPress={resetGame}>
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -283,40 +251,65 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#0D0D0D' },
-  container: { flex: 1 },
-  topBar: {
+  container: { flex: 1, alignItems: 'center' },
+
+  header: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 8,      // balanced & visible
-    paddingBottom: 5,
-  },
-  levelInBar: { color: '#00f0ff', fontSize: 16, fontWeight: '700', letterSpacing: 1 },
-  livesContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 20,
   },
-  gridWrapper: { marginBottom: 16 },
+  backButton: { padding: 8 },
+  headerCenter: { alignItems: 'center' },
+  levelText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  livesContainer: { flexDirection: 'row', gap: 10 },
+  lifeDot: { width: 10, height: 10, borderRadius: 5 },
+
   gridContainer: {
-    backgroundColor: '#111122',
-    padding: 12,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#222233',
+    marginTop: 40,
+    alignItems: 'center',
   },
-  row: { flexDirection: 'row' },
+  row: { flexDirection: 'row', marginBottom: TILE_GAP },
+  tile: {
+    width: TILE_SIZE,
+    height: TILE_SIZE,
+    borderRadius: 14,
+    marginHorizontal: TILE_GAP / 2,
+  },
 
-  levelCompleteContainer: { alignItems: 'center', marginTop: 6 },
-  levelCompleteTitle: { color: '#00f0ff', fontSize: 22, fontWeight: '800', marginBottom: 12 },
-  nextButton: { backgroundColor: '#00f0ff', paddingHorizontal: 42, paddingVertical: 12, borderRadius: 24 },
-  nextText: { color: '#000000', fontSize: 16, fontWeight: '700' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 28,
+    paddingHorizontal: 36,
+    borderRadius: 16,
+    alignItems: 'center',
+    minWidth: 220,
+  },
+  modalTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', marginBottom: 20 },
+  nextButton: {
+    borderWidth: 1.5,
+    borderColor: '#5B7FE0',
+    paddingHorizontal: 32,
+    paddingVertical: 11,
+    borderRadius: 24,
+  },
+  nextButtonText: { color: '#5B7FE0', fontSize: 16, fontWeight: '600' },
 
-  retryButton: { marginTop: 12, backgroundColor: '#00f0ff', paddingHorizontal: 38, paddingVertical: 11, borderRadius: 22 },
-  retryText: { color: '#000000', fontSize: 15, fontWeight: '700' },
+  retryButton: {
+    marginTop: 30,
+    backgroundColor: '#5B7FE0',
+    paddingHorizontal: 36,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  retryText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
