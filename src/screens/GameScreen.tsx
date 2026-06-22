@@ -12,6 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useSound } from '../hooks/useSound';
 
 type GameRouteProp = RouteProp<RootStackParamList, 'Game'>;
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -28,6 +29,8 @@ export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
   const navigation = useNavigation<NavProp>();
   const { mode } = route.params;
+
+  const { playTileSound, playWrong, playRoundComplete, playGameOver } = useSound();
 
   const [sequence, setSequence] = useState<number[]>([]);
   const [userInput, setUserInput] = useState<number[]>([]);
@@ -57,6 +60,7 @@ export default function GameScreen() {
 
     for (let i = 0; i < seq.length; i++) {
       setActiveTile(seq[i]);
+      playTileSound(seq[i]);
       await new Promise(r => setTimeout(r, 380));
       setActiveTile(null);
       if (i < seq.length - 1) await new Promise(r => setTimeout(r, 120));
@@ -64,7 +68,7 @@ export default function GameScreen() {
     setActiveTile(null);
     setIsProcessing(false);
     setGameState('playing');
-  }, []);
+  }, [playTileSound]);
 
   const playWaveCelebration = useCallback(async () => {
     const waveOrder: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
@@ -81,11 +85,12 @@ export default function GameScreen() {
     const newLives = lives - 1;
     setLives(newLives);
     if (newLives <= 0) {
+      playGameOver();
       setGameState('gameOver');
       setIsProcessing(true);
       setShowGameOverModal(true);
     }
-  }, [lives]);
+  }, [lives, playGameOver]);
 
   const startNewRound = useCallback(async (startingLevel?: number) => {
     const currentLevel = startingLevel || level;
@@ -139,6 +144,7 @@ export default function GameScreen() {
 
     for (let i = 0; i < sequence.length; i++) {
       setActiveTile(sequence[i]);
+      playTileSound(sequence[i]);
       await new Promise(r => setTimeout(r, 380));
       setActiveTile(null);
       if (i < sequence.length - 1) await new Promise(r => setTimeout(r, 120));
@@ -157,6 +163,7 @@ export default function GameScreen() {
 
     if (sequence[currentIndex] !== tileId) {
       setWrongTile(tileId);
+      playWrong();
       setIsProcessing(true);
 
       setTimeout(() => {
@@ -172,10 +179,12 @@ export default function GameScreen() {
     }
 
     triggerCorrectTapFeedback(tileId);
+    playTileSound(tileId);
 
     if (newInput.length === sequence.length) {
       setGameState('levelComplete');
       setIsProcessing(true);
+      playRoundComplete();
 
       if (mode === 'classic') {
         AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1)).catch(() => {});
@@ -191,7 +200,7 @@ export default function GameScreen() {
         });
       }, 130);
     }
-  }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode, playWaveCelebration]);
+  }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode, playWaveCelebration, playTileSound, playWrong, playRoundComplete]);
 
   const startAutoAdvanceCountdown = () => {
     setCountdown(2);
