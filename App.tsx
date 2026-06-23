@@ -4,12 +4,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Placeholder screens for initial setup
 import HomeScreen from './src/screens/HomeScreen';
 import GameScreen from './src/screens/GameScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import LevelsScreen from './src/screens/LevelsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -17,6 +17,7 @@ export type RootStackParamList = {
   Stats: undefined;
   Settings: undefined;
   Leaderboard: undefined;
+  Levels: undefined;
   LevelComplete: { level: number; score: number };
   GameOver: { score: number; isNewBest: boolean; mode: string };
 };
@@ -43,6 +44,7 @@ export default function App() {
             <Stack.Screen name="Stats" component={StatsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+            <Stack.Screen name="Levels" component={LevelsScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
