@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
-const TOTAL_LEVELS = 20;
+const TOTAL_LEVELS = 25;
 
 export default function LevelsScreen() {
   const navigation = useNavigation<NavProp>();
@@ -39,11 +39,12 @@ export default function LevelsScreen() {
   const renderLevel = (levelNum: number) => {
     const isUnlocked = levelNum <= unlockedLevel;
     const isCurrent = levelNum === unlockedLevel;
+    const isFinal = levelNum === TOTAL_LEVELS;
 
     let content;
     if (isUnlocked) {
       content = (
-        <Text style={[styles.levelNumber, isCurrent && styles.currentText]}>
+        <Text style={[styles.levelNumber, isCurrent && styles.currentText, isFinal && styles.finalText]}>
           {levelNum}
         </Text>
       );
@@ -57,6 +58,7 @@ export default function LevelsScreen() {
         style={[
           styles.levelBox,
           isCurrent && styles.currentLevel,
+          isFinal && styles.finalLevel,
           !isUnlocked && styles.lockedLevel,
         ]}
         onPress={() => isUnlocked && startLevel(levelNum)}
@@ -71,7 +73,7 @@ export default function LevelsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Levels</Text>
-        <Text style={styles.subtitle}>Classic Mode</Text>
+        <Text style={styles.subtitle}>Classic Mode • 25 Levels</Text>
 
         <ScrollView contentContainerStyle={styles.grid}>
           {Array.from({ length: TOTAL_LEVELS }, (_, i) => renderLevel(i + 1))}
@@ -119,8 +121,13 @@ const styles = StyleSheet.create({
     borderColor: '#222233',
   },
   currentLevel: {
-    backgroundColor: '#00f0ff',
-    borderColor: '#00f0ff',
+    backgroundColor: '#5B7FE0',
+    borderColor: '#5B7FE0',
+  },
+  finalLevel: {
+    backgroundColor: '#FFD700',
+    borderColor: '#FFD700',
+    borderWidth: 3,
   },
   lockedLevel: {
     backgroundColor: '#0A0A14',
@@ -132,8 +139,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   currentText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '800',
+  },
+  finalText: {
+    color: '#000000',
+    fontWeight: '900',
   },
   backButton: {
     marginTop: 30,
