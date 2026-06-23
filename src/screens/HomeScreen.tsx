@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,20 +17,46 @@ import { Ionicons } from '@expo/vector-icons';
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
+const PLAYER_NAME_KEY = '@neurox_player_name';
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavProp>();
   const [currentLevel, setCurrentLevel] = useState(1);
+  const [playerName, setPlayerName] = useState<string>('');
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [tempName, setTempName] = useState('');
 
   useEffect(() => {
-    const loadProgress = async () => {
+    const loadData = async () => {
       try {
-        const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
-        if (saved) setCurrentLevel(parseInt(saved));
+        // Load classic progress
+        const savedLevel = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
+        if (savedLevel) setCurrentLevel(parseInt(savedLevel));
+
+        // Load player name
+        const savedName = await AsyncStorage.getItem(PLAYER_NAME_KEY);
+        if (savedName) {
+          setPlayerName(savedName);
+        } else {
+          // First time - ask for name
+          setTimeout(() => setShowNameModal(true), 600);
+        }
       } catch {}
     };
-    loadProgress();
+    loadData();
   }, []);
+
+  const savePlayerName = async () => {
+    const trimmed = tempName.trim();
+    if (trimmed.length < 2) return;
+
+    try {
+      await AsyncStorage.setItem(PLAYER_NAME_KEY, trimmed);
+      setPlayerName(trimmed);
+      setShowNameModal(false);
+      setTempName('');
+    } catch {}
+  };
 
   const goToMode = (mode: 'classic' | 'survival' | 'twist') => {
     navigation.navigate('Game', { mode });
@@ -39,6 +67,9 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.logo}>NEUROX</Text>
+          {playerName ? (
+            <Text style={styles.welcomeText}>Hey, {playerName}</Text>
+          ) : null}
           <Text style={styles.levelText}>Level {currentLevel}</Text>
         </View>
 
@@ -82,6 +113,40 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* First Time Name Modal */}
+      <Modal
+        visible={showNameModal}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Welcome to Neurox</Text>
+            <Text style={styles.modalSubtitle}>What should we call you?</Text>
+
+            <TextInput
+              style={styles.nameInput}
+              placeholder="Your name"
+              placeholderTextColor="#666666"
+              value={tempName}
+              onChangeText={setTempName}
+              maxLength={16}
+              autoFocus={true}
+              returnKeyType="done"
+              onSubmitEditing={savePlayerName}
+            />
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={savePlayerName}
+              disabled={tempName.trim().length < 2}
+            >
+              <Text style={styles.saveButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -101,6 +166,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 3,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: '#5B7FE0',
+    marginTop: 8,
+    fontWeight: '600',
   },
   levelText: {
     fontSize: 17,
@@ -142,4 +213,55 @@ const styles = StyleSheet.create({
   navItem: { alignItems: 'center' },
   navLabel: { color: '#888888', fontSize: 12, fontWeight: '600' },
   navLabelActive: { color: '#00f0ff', fontSize: 12, fontWeight: '700' },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    padding: 28,
+    borderRadius: 20,
+    width: '85%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    color: '#AAAAAA',
+    fontSize: 15,
+    marginBottom: 24,
+  },
+  nameInput: {
+    backgroundColor: '#111111',
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    width: '100%',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#5B7FE0',
+    paddingHorizontal: 48,
+    paddingVertical: 14,
+    borderRadius: 30,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
