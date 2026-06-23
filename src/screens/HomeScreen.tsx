@@ -93,6 +93,14 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.navItem}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <Ionicons name="trophy-outline" size={22} color="#888888" />
+            <Text style={styles.navLabel}>Leaderboard</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
             onPress={() => navigation.navigate('Settings')}
           >
             <Ionicons name="settings-outline" size={22} color="#888888" />
