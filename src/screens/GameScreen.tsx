@@ -20,15 +20,16 @@ type NavProp = NativeStackNavigationProp<RootStackParamList>;
 const GRID_SIZE = 3;
 const TILE_SIZE = 78;
 const TILE_GAP = 14;
+const MAX_LEVEL = 25;
 
-type GameState = 'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver';
+type GameState = 'idle' | 'watching' | 'playing' | 'levelComplete' | 'gameOver' | 'gameComplete';
 
 const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 
 export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
   const navigation = useNavigation<NavProp>();
-  const { mode } = route.params;
+  const { mode, startLevel } = route.params;
 
   const { playTileSound, playWrong, playRoundComplete, playGameOver } = useSound();
 
@@ -42,6 +43,7 @@ export default function GameScreen() {
   const [lives, setLives] = useState(3);
   const [showLevelCompleteModal, setShowLevelCompleteModal] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false);
   const [correctTapFeedback, setCorrectTapFeedback] = useState<number | null>(null);
   const [waveTile, setWaveTile] = useState<number | null>(null);
 
@@ -72,7 +74,7 @@ export default function GameScreen() {
 
   const playWaveCelebration = useCallback(async () => {
     const waveOrder: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    const stepTime = 72; // ~650ms total for smooth fast wave sweep
+    const stepTime = 72;
 
     for (let i = 0; i < waveOrder.length; i++) {
       setWaveTile(waveOrder[i]);
@@ -103,6 +105,7 @@ export default function GameScreen() {
     setLives(3);
     setShowLevelCompleteModal(false);
     setShowGameOverModal(false);
+    setShowGameCompleteModal(false);
     setCountdown(0);
     setWaveTile(null);
     if (autoAdvanceTimer.current) {
@@ -117,8 +120,12 @@ export default function GameScreen() {
       if (mode === 'classic') {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
-          const startLevel = saved ? parseInt(saved) : 1;
-          setTimeout(() => startNewRound(startLevel), 300);
+          let startLevelNum = saved ? parseInt(saved) : 1;
+
+          // Respect max level
+          if (startLevelNum > MAX_LEVEL) startLevelNum = MAX_LEVEL;
+
+          setTimeout(() => startNewRound(startLevelNum), 300);
         } catch {
           setTimeout(() => startNewRound(1), 300);
         }
@@ -182,23 +189,36 @@ export default function GameScreen() {
     playTileSound(tileId);
 
     if (newInput.length === sequence.length) {
-      setGameState('levelComplete');
-      setIsProcessing(true);
-      playRoundComplete();
+      const nextLevel = level + 1;
 
-      if (mode === 'classic') {
-        AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(level + 1)).catch(() => {});
+      if (level === MAX_LEVEL) {
+        // Player beat the final level
+        setGameState('gameComplete');
+        setIsProcessing(true);
+        playRoundComplete();
+
+        setTimeout(() => {
+          setShowGameCompleteModal(true);
+        }, 300);
+      } else {
+        setGameState('levelComplete');
+        setIsProcessing(true);
+        playRoundComplete();
+
+        if (mode === 'classic') {
+          const newProgress = Math.min(nextLevel, MAX_LEVEL);
+          AsyncStorage.setItem(CLASSIC_PROGRESS_KEY, String(newProgress));
+        }
+
+        setTimeout(() => {
+          playWaveCelebration().then(() => {
+            setTimeout(() => {
+              setShowLevelCompleteModal(true);
+              startAutoAdvanceCountdown();
+            }, 60);
+          });
+        }, 130);
       }
-
-      // Play fast grid wave celebration (~650ms), then show Level Complete popup
-      setTimeout(() => {
-        playWaveCelebration().then(() => {
-          setTimeout(() => {
-            setShowLevelCompleteModal(true);
-            startAutoAdvanceCountdown();
-          }, 60);
-        });
-      }, 130);
     }
   }, [gameState, isProcessing, userInput, sequence, loseLife, lives, level, mode, playWaveCelebration, playTileSound, playWrong, playRoundComplete]);
 
@@ -246,6 +266,7 @@ export default function GameScreen() {
     setLives(3);
     setShowLevelCompleteModal(false);
     setShowGameOverModal(false);
+    setShowGameCompleteModal(false);
     setCountdown(0);
     setWaveTile(null);
     setTimeout(() => startNewRound(1), 200);
@@ -363,6 +384,24 @@ export default function GameScreen() {
             </View>
           </View>
         </Modal>
+
+        {/* Game Complete Modal (Final Level) */}
+        <Modal
+          visible={showGameCompleteModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={resetGame}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>You Did It!</Text>
+              <Text style={styles.completeText}>You completed all 25 levels</Text>
+              <TouchableOpacity style={styles.completeButton} onPress={resetGame}>
+                <Text style={styles.completeButtonText}>Play Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -435,6 +474,7 @@ const styles = StyleSheet.create({
     minWidth: 220,
   },
   modalTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', marginBottom: 20 },
+  completeText: { color: '#AAAAAA', fontSize: 15, marginTop: -8, marginBottom: 20 },
   nextButton: {
     borderWidth: 1.5,
     borderColor: '#5B7FE0',
@@ -443,6 +483,14 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   nextButtonText: { color: '#5B7FE0', fontSize: 16, fontWeight: '600' },
+
+  completeButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 30,
+  },
+  completeButtonText: { color: '#000000', fontSize: 16, fontWeight: '700' },
 
   retryButtonModal: {
     backgroundColor: '#5B7FE0',
