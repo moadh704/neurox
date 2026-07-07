@@ -4,11 +4,13 @@
   <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Native"/>
   <img src="https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo"/>
   <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License: MIT"/>
+  <img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge" alt="License: Proprietary"/>
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=for-the-badge&logo=android" alt="Platform"/>
 </p>
 
 **Neurox** is a polished dark neon memory sequence game built with React Native and Expo. Players watch sequences of glowing tiles and must repeat them in order. The game features progressive difficulty, multiple modes, twist mechanics, and satisfying audio-visual feedback.
+
+> **Note:** This project is proprietary. All rights are reserved. The source code is not licensed for reuse, modification, or redistribution without explicit permission.
 
 ## Features
 
@@ -40,21 +42,7 @@
 
 ## Getting Started
 
-```bash
-# Clone the repository
-git clone https://github.com/moadh704/neurox.git
-cd neurox
-
-# Install dependencies
-npm install
-
-# Start the development server
-npx expo start
-
-# Run on specific platform
-npx expo run:android
-npx expo run:ios
-```
+This repository is private/proprietary. Access is restricted.
 
 ## Project Structure
 
@@ -77,11 +65,13 @@ neurox/
 
 ## License
 
-This project is licensed under the MIT License.
+**All Rights Reserved.**
+
+This software is the exclusive property of moadh704. Unauthorized copying, modification, distribution, or use is strictly prohibited.
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues or submit pull requests.
+This is a proprietary project. Contributions are only accepted by invitation.
 
 ---
 
