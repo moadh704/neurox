@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,22 +26,27 @@ export default function HomeScreen() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedLevel = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
-        if (savedLevel) setCurrentLevel(parseInt(savedLevel));
+  // Reload progress every time Home screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadData = async () => {
+        try {
+          const savedLevel = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
+          if (savedLevel) {
+            setCurrentLevel(parseInt(savedLevel));
+          }
 
-        const savedName = await AsyncStorage.getItem(PLAYER_NAME_KEY);
-        if (savedName) {
-          setPlayerName(savedName);
-        } else {
-          setTimeout(() => setShowNameModal(true), 600);
-        }
-      } catch {}
-    };
-    loadData();
-  }, []);
+          const savedName = await AsyncStorage.getItem(PLAYER_NAME_KEY);
+          if (savedName) {
+            setPlayerName(savedName);
+          } else {
+            setTimeout(() => setShowNameModal(true), 600);
+          }
+        } catch {}
+      };
+      loadData();
+    }, [])
+  );
 
   const savePlayerName = async () => {
     const trimmed = tempName.trim();
