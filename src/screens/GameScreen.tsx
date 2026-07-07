@@ -29,7 +29,7 @@ const CLASSIC_PROGRESS_KEY = '@neurox_classic_level';
 export default function GameScreen() {
   const route = useRoute<GameRouteProp>();
   const navigation = useNavigation<NavProp>();
-  const { mode, startLevel } = route.params;
+  const { mode, startLevel } = route.params || {};
 
   const { playTileSound, playWrong, playRoundComplete, playGameOver } = useSound();
 
@@ -120,7 +120,8 @@ export default function GameScreen() {
       if (mode === 'classic') {
         try {
           const saved = await AsyncStorage.getItem(CLASSIC_PROGRESS_KEY);
-          let startLevelNum = saved ? parseInt(saved) : 1;
+          // Priority: startLevel from LevelsScreen > saved progress > 1
+          let startLevelNum = startLevel || (saved ? parseInt(saved) : 1);
 
           // Respect max level
           if (startLevelNum > MAX_LEVEL) startLevelNum = MAX_LEVEL;
@@ -134,7 +135,7 @@ export default function GameScreen() {
       }
     };
     init();
-  }, []);
+  }, [mode, startLevel]);
 
   const triggerCorrectTapFeedback = (tileId: number) => {
     setCorrectTapFeedback(tileId);
