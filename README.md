@@ -8,25 +8,31 @@
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=for-the-badge&logo=android" alt="Platform"/>
 </p>
 
-**Neurox is a dark neon arcade memory sequence game built with React Native and Expo.**
-
-A highly polished mobile memory game where players watch sequences of neon tiles light up and must repeat them perfectly. Features multiple game modes, progressive difficulty, twist challenges, persistent progress, and addictive arcade gameplay.
+**Neurox** is a polished dark neon memory sequence game built with React Native and Expo. Players watch sequences of glowing tiles and must repeat them in order. The game features progressive difficulty, multiple modes, twist mechanics, and satisfying audio-visual feedback.
 
 ## Features
 
-- **Classic Mode**: Structured levels with permanent progress saving
-- **Survival Mode**: Endless challenge with global leaderboard
-- **Twist Modes**: Unlockable variants (Reverse, Ghost, Bomb, Blind, Distraction, Rhythm)
-- **Dark Neon Visuals**: Stunning cyberpunk-inspired UI with glow effects
-- **Unique Audio**: Each tile has its own musical tone forming melodies
-- **Haptic Feedback**: Satisfying vibrations for every interaction
-- **Progression System**: Badges, themes, and grid unlocks at milestones
+- **Classic Mode** — Structured levels with persistent progress
+- **Survival Mode** — Endless gameplay with scoring and leaderboards
+- **Twist Modes** — Unlockable variants including Reverse, Ghost, Bomb, Blind, Distraction, and Rhythm
+- **Dark Neon Aesthetic** — Modern cyberpunk-inspired UI with smooth animations
+- **Musical Feedback** — Each tile plays a unique tone, creating melodies as you play
+- **Haptic Feedback** — Satisfying vibrations for every interaction
+- **Progression System** — Unlock themes, badges, and grid variations through milestones
+
+## How to Play
+
+1. Watch the sequence of tiles light up
+2. Repeat the exact sequence by tapping the tiles
+3. Complete the sequence to advance to the next level
+4. Use the eye icon to replay the sequence if needed
+5. Survive as long as possible in Survival mode or master all 25 levels in Classic mode
 
 ## Tech Stack
 
 - React Native + Expo
 - TypeScript
-- React Navigation
+- React Navigation (Native Stack)
 - Reanimated 2
 - Expo AV (Audio)
 - Expo Haptics
@@ -35,15 +41,19 @@ A highly polished mobile memory game where players watch sequences of neon tiles
 ## Getting Started
 
 ```bash
+# Clone the repository
+git clone https://github.com/moadh704/neurox.git
+cd neurox
+
 # Install dependencies
 npm install
 
 # Start the development server
-npm start
+npx expo start
 
 # Run on specific platform
-npm run android
-npm run ios
+npx expo run:android
+npx expo run:ios
 ```
 
 ## Project Structure
@@ -51,33 +61,28 @@ npm run ios
 ```
 neurox/
 ├── src/
-│   ├── components/     # Reusable UI components (Tile, Grid, Lives, etc.)
-│   ├── constants/      # Colors, game config, themes
-│   ├── hooks/          # Custom hooks (useGameLogic, useSound, etc.)
-│   ├── navigation/     # Navigators and route types
-│   ├── screens/        # All app screens
-│   ├── utils/          # Helpers, sequence generators, storage
-│   └── types/          # TypeScript interfaces
+│   ├── components/     # Reusable components (Tile, Grid, etc.)
+│   ├── constants/      # Colors, config, themes
+│   ├── hooks/          # Custom hooks (useSound, useHaptics, etc.)
+│   ├── screens/        # Game screens (Home, Game, Levels, Settings...)
+│   ├── utils/          # Helpers and utilities
+│   └── types/          # TypeScript definitions
 ├── assets/
-│   ├── images/         # Icons, backgrounds, sprites
-│   └── sounds/         # Xylophone tone files + SFX
+│   ├── images/
+│   └── sounds/         # Audio assets
 ├── App.tsx
 ├── app.json
 └── package.json
 ```
 
-## Build Steps (Development Log)
-
-This project is being built iteratively:
-
-- Step 1: Project initialization & folder structure ✅
-- Step 2: Home screen UI
-- ... (see commits for progress)
-
 ## License
 
-MIT
+This project is licensed under the MIT License.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ---
 
-Built with ❤️ for memory game lovers and neon aesthetic fans.
+Built with passion for memory games and beautiful mobile experiences.
