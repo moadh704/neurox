@@ -1,5 +1,13 @@
 # 🧠 NEUROX
 
+<p align="center">
+  <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Native"/>
+  <img src="https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo"/>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License: MIT"/>
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=for-the-badge&logo=android" alt="Platform"/>
+</p>
+
 **Neurox is a dark neon arcade memory sequence game built with React Native and Expo.**
 
 A highly polished mobile memory game where players watch sequences of neon tiles light up and must repeat them perfectly. Features multiple game modes, progressive difficulty, twist challenges, persistent progress, and addictive arcade gameplay.
